@@ -39,18 +39,18 @@ cp -R skill ~/.claude/skills/tramito-bpmn-assistant
 
 打包并上传：`./package.sh` 产出 `dist/tramito-bpmn-assistant.zip` → 技能市场 →【添加技能】上传。安装与使用已在 WorkBuddy 宿主内实测通过（2026-09）。细节见 [`docs/workbuddy.md`](docs/workbuddy.md)。
 
-### 配置你自己的凭证（必做，技能不内置任何共享 Key）
+### 配置凭证（必做，技能不内置任何共享 Key）
 
-1. 到 [tramito.ai](https://tramito.ai) 注册并验证邮箱；
-2. Settings → API Keys 创建 Key（`tmt_live_` 开头）；
-3. 配置（推荐环境变量；不要把 Key 发进聊天或写进文件/仓库）：
+一条命令完成登录（**不用复制粘贴 Key**）：
 
 ```bash
-export TRAMITO_API_KEY=tmt_live_你的Key
-export TRAMITO_BASE_URL=https://tramito.ai   # 自建/私有部署才需要改
+node skill/scripts/tramito.js login
 ```
 
-或写入 `~/.tramito/config.json`：`{"apiKey": "tmt_live_...", "baseUrl": "https://tramito.ai"}`。
+- 终端会打印一个链接——在浏览器打开（登录 tramito.ai，没账号就先注册并验证邮箱），确认配对码后点「授权此设备」；配对页自动创建 Key，CLI 自动写入 `~/.tramito/config.json` 并验证。
+- 无浏览器的环境（纯 SSH/CI）：`node skill/scripts/tramito.js login --paste` 粘贴 Key（输入不回显，自动写配置）；Key 在 tramito.ai 的 Settings → API Keys 创建。
+- 高级用户也可手动配置：环境变量 `TRAMITO_API_KEY`（`TRAMITO_BASE_URL` 可选，自建才改），或直接写 `~/.tramito/config.json`。
+- **不要把 Key 发到聊天里、不要写进流程文件或仓库**；泄漏过的 Key 到 Settings → API Keys 撤销。`tramito.js logout` 删除本机配置（服务端 Key 不受影响）。
 
 ## 额度与规则（注册即用）
 

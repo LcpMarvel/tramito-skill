@@ -13,6 +13,9 @@ Base URL：用户配置的 `TRAMITO_BASE_URL`（默认 `https://tramito.ai`）�
 | GET | `/api/v1/bpmn/renders/:id` | Bearer | 查询/恢复某次转换结果（不再扣次） |
 | GET | `/api/v1/bpmn/renders/:id/artifacts/bpmn` | Bearer（org 匹配）或 `?token=` 凭证 | 下载 .bpmn（响应带 `x-expires-at`）；保留期内下载不扣次 |
 | GET | `/api/v1/usage` | Bearer | 本月转换额度、并发、重置时间（与网页 AI 额度独立） |
+| POST | `/api/v1/pair` | 公开（限速 10 次/时/IP） | 设备配对登录：创建配对 → `{code, verificationUrl, deviceSecret, expiresAt}`（10 分钟有效） |
+| POST | `/api/v1/pair/poll` | 公开（限速 30 次/分/码） | CLI 持 deviceSecret 轮询；授权后首次轮询一次性返回明文 Key（领取即失效） |
+| POST | `/api/v1/pair/authorize` | 登录 + 邮箱已验证 | 浏览器里确认配对码并授权：自动创建 API Key 暂存待领取 |
 
 ## POST /api/v1/bpmn/render
 

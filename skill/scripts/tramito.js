@@ -15,6 +15,12 @@
  *   node tramito.js download <renderId> bpmn [--out FILE]
  *                                                 重新下载仍有效的 .bpmn（不再次计次）
  *   node tramito.js link <renderId>               重新获取当前有效的查看器链接（不扣次）
+ *   node tramito.js login [--start | --wait | --paste] [--force]
+ *                                                 登录并把 Key 自动写入 ~/.tramito/config.json：
+ *                                                   默认=浏览器配对（打开链接点授权，零复制粘贴）；
+ *                                                   --start/--wait 拆分两步供宿主 Agent 使用；
+ *                                                   --paste 从 stdin 读取 Key（无浏览器环境）
+ *   node tramito.js logout                        删除本机配置
  *
  * 幂等语义：idempotencyKey = graph 规范化内容（键排序稳定序列化）的哈希——同一份
  * 内容在 24h 窗口内跨进程/跨重试回放同一结果、只计 1 次；窗口过期服务端拒绝时，
@@ -94,11 +100,13 @@ function requireAuth(cfg) {
 /* ────────────── 参数解析 ────────────── */
 
 const VALUE_OPTS = new Set(['--out', '--name']);
+const BOOLEAN_OPTS = new Set(['--start', '--wait', '--paste', '--force']);
 
-/** 解析 argv：返回 { positionals: string[], opts: Map<string,string> }。选项值缺失报错。 */
+/** 解析 argv：返回 { positionals: string[], opts: Map<string,string>, flags: Set<string> }。 */
 function parseArgs(args) {
   const positionals = [];
   const opts = new Map();
+  const flags = new Set();
   for (let i = 0; i < args.length; i++) {
     const a = args[i];
     if (a === '--') {
@@ -106,7 +114,13 @@ function parseArgs(args) {
       break;
     }
     if (a.startsWith('--')) {
-      if (!VALUE_OPTS.has(a)) fail(`未知选项：${a}（可用：${[...VALUE_OPTS].join(' ')}）`);
+      if (BOOLEAN_OPTS.has(a)) {
+        flags.add(a);
+        continue;
+      }
+      if (!VALUE_OPTS.has(a)) {
+        fail(`未知选项：${a}（可用：${[...VALUE_OPTS, ...BOOLEAN_OPTS].join(' ')}）`);
+      }
       const v = args[i + 1];
       if (v === undefined || v.startsWith('--')) fail(`选项 ${a} 需要一个值`);
       opts.set(a, v);
@@ -115,7 +129,7 @@ function parseArgs(args) {
       positionals.push(a);
     }
   }
-  return { positionals, opts };
+  return { positionals, opts, flags };
 }
 
 /* ────────────── 规范化与文件工具 ────────────── */
@@ -404,6 +418,192 @@ async function cmdUsage(cfg) {
   console.log(JSON.stringify({ ok: true, ...r }, null, 2));
 }
 
+/* ────────────── login / logout ────────────── */
+
+const PENDING_FILE = () => path.join(os.homedir(), '.tramito', 'login.pending.json');
+
+/** 写配置：目录 0700、文件 0600；已有配置时需 --force 才覆盖。 */
+function saveConfig(configPath, apiKey, baseUrl, force) {
+  if (fs.existsSync(configPath) && !force) {
+    fail(`配置已存在：${configPath}。确认要换账号/换 Key 请加 --force，或先运行 "tramito.js logout"。`);
+  }
+  fs.mkdirSync(path.dirname(configPath), { recursive: true, mode: 0o700 });
+  fs.writeFileSync(configPath, JSON.stringify({ apiKey, baseUrl }, null, 2) + '\n', { mode: 0o600 });
+}
+
+async function verifyLogin(baseUrl, apiKey) {
+  const probe = { apiKey, baseUrl, configPath: '' };
+  return api(probe, 'GET', '/api/v1/usage');
+}
+
+function printLoginOk(cfg, usage) {
+  console.log(JSON.stringify({
+    ok: true,
+    configWritten: cfg.configPath,
+    baseUrl: cfg.baseUrl,
+    plan: usage.plan,
+    used: usage.used,
+    limit: usage.limit,
+    remaining: usage.limit === null ? null : Math.max(0, usage.limit - usage.used),
+    message: '登录完成，可以直接使用了。',
+  }, null, 2));
+}
+
+/** --start：创建配对并把待领取状态存到 pending 文件（供 --wait 续用）。 */
+async function loginStart(cfg) {
+  const r = await api(cfg, 'POST', '/api/v1/pair', { body: {} });
+  fs.mkdirSync(path.dirname(PENDING_FILE()), { recursive: true, mode: 0o700 });
+  fs.writeFileSync(PENDING_FILE(), JSON.stringify({
+    code: r.code, deviceSecret: r.deviceSecret, baseUrl: cfg.baseUrl, expiresAt: r.expiresAt,
+  }), { mode: 0o600 });
+  console.log(JSON.stringify({
+    ok: true,
+    status: 'pairing_started',
+    code: r.code,
+    verificationUrl: r.verificationUrl,
+    expiresAt: r.expiresAt,
+    next: `请把这个链接交给用户在浏览器里打开并点「授权此设备」，然后运行 "tramito.js login --wait" 等待完成。`,
+  }, null, 2));
+}
+
+function readPending() {
+  if (!fs.existsSync(PENDING_FILE())) {
+    fail('没有进行中的配对。先运行 "tramito.js login --start"。');
+  }
+  try {
+    const p = JSON.parse(fs.readFileSync(PENDING_FILE(), 'utf-8'));
+    if (!p.code || !p.deviceSecret) throw new Error('bad pending file');
+    return p;
+  } catch (e) {
+    fail(`配对状态文件损坏（${e.message}）：${PENDING_FILE()}。请重新运行 "tramito.js login --start"。`);
+  }
+}
+
+/** 轮询一次配对；成功→写配置+验证，未完成→抛 login_pending（exit 3）。 */
+async function loginPollOnce(cfg, pending) {
+  let r;
+  try {
+    r = await api(cfg, 'POST', '/api/v1/pair/poll', {
+      body: { code: pending.code, deviceSecret: pending.deviceSecret },
+    });
+  } catch (e) {
+    if (e.code === 'pair_expired') {
+      fs.rmSync(PENDING_FILE(), { force: true });
+      fail('配对已过期。请重新运行 "tramito.js login --start" 并把新链接给用户。');
+    }
+    throw e;
+  }
+  if (r.status === 'pending') return false;
+  // authorized：写配置 + 验证
+  saveConfig(cfg.configPath, r.apiKey, cfg.baseUrl, currentFlags.has('--force'));
+  fs.rmSync(PENDING_FILE(), { force: true });
+  const usage = await verifyLogin(cfg.baseUrl, r.apiKey);
+  printLoginOk({ ...cfg, apiKey: r.apiKey }, usage);
+  return true;
+}
+
+async function loginWait(cfg, budgetMs) {
+  const pending = readPending();
+  if (pending.baseUrl && pending.baseUrl !== cfg.baseUrl) {
+    console.error(JSON.stringify({ ok: false, error: { code: 'cli_error', message: `当前 TRAMITO_BASE_URL 与发起配对时不一致（${pending.baseUrl} → ${cfg.baseUrl}）。请改回后重试。` } }, null, 2));
+    process.exit(2);
+  }
+  const deadline = Date.now() + budgetMs;
+  while (Date.now() < deadline) {
+    if (await loginPollOnce(cfg, pending)) return;
+    await new Promise((res) => setTimeout(res, 2000));
+  }
+  console.error(JSON.stringify({
+    ok: false,
+    error: {
+      code: 'login_pending',
+      message: '用户还没有在浏览器里完成授权。提醒用户打开链接点「授权此设备」后，再运行一次 "tramito.js login --wait"。',
+      verificationUrl: pending.verificationUrl ?? null,
+    },
+  }, null, 2));
+  process.exit(3);
+}
+
+/** --paste：从 stdin 读 Key（TTY 时隐藏输入），写配置并验证。 */
+async function loginPaste(cfg) {
+  const key = await readStdinSecret('请粘贴你的 API Key（tmt_live_…，输入不回显）：');
+  if (!/^tmt_live_\S{10,}$/.test(key)) {
+    fail('格式不对：Key 应以 tmt_live_ 开头。请到 Settings → API Keys 复制完整 Key。');
+  }
+  saveConfig(cfg.configPath, key, cfg.baseUrl, currentFlags.has('--force'));
+  const usage = await verifyLogin(cfg.baseUrl, key);
+  printLoginOk({ ...cfg, apiKey: key }, usage);
+}
+
+function readStdinSecret(prompt) {
+  return new Promise((resolve, reject) => {
+    if (process.stdin.isTTY) {
+      process.stderr.write(prompt);
+      process.stdin.setRawMode(true);
+      process.stdin.resume();
+      process.stdin.setEncoding('utf-8');
+      let buf = '';
+      const onData = (ch) => {
+        if (ch === '\r' || ch === '\n') {
+          process.stdin.setRawMode(false);
+          process.stdin.pause();
+          process.stderr.write('\n');
+          resolve(buf.trim());
+        } else if (ch === '\u0003') {
+          process.stdin.setRawMode(false);
+          process.exit(130);
+        } else if (ch === '\u007f') {
+          buf = buf.slice(0, -1);
+        } else {
+          buf += ch;
+        }
+      };
+      process.stdin.on('data', onData);
+    } else {
+      // 管道/重定向：直接读全文
+      let buf = '';
+      process.stdin.setEncoding('utf-8');
+      process.stdin.on('data', (d) => { buf += d; });
+      process.stdin.on('end', () => resolve(buf.trim()));
+      process.stdin.on('error', reject);
+      process.stdin.resume();
+    }
+  });
+}
+
+const WAIT_ONCE_MS = 90_000;   // --wait 单次预算（宿主 Agent 有界重跑）
+const LOGIN_TOTAL_MS = 600_000; // 交互式 login 总预算 10 分钟
+
+// main() 在调用前把 flags 存下来供 login 系列使用
+let currentFlags = new Set();
+
+async function cmdLogin(cfg, flags) {
+  currentFlags = flags;
+  if (flags.has('--paste')) return loginPaste(cfg);
+  if (flags.has('--start')) return loginStart(cfg);
+  if (flags.has('--wait')) return loginWait(cfg, WAIT_ONCE_MS);
+  // 默认（交互式）：start + 持续等待
+  await loginStart(cfg);
+  console.error('请在浏览器里打开上面的链接并点「授权此设备」——我会在这里等你完成（最多 10 分钟）…');
+  const pending = readPending();
+  const deadline = Date.now() + LOGIN_TOTAL_MS;
+  while (Date.now() < deadline) {
+    if (await loginPollOnce(cfg, pending)) return;
+    await new Promise((res) => setTimeout(res, 2000));
+  }
+  fail('等待超时。可以重新运行 "tramito.js login --wait" 继续等（配对 10 分钟内有效）。');
+}
+
+async function cmdLogout(cfg) {
+  if (fs.existsSync(cfg.configPath)) {
+    fs.rmSync(cfg.configPath, { force: true });
+    console.log(JSON.stringify({ ok: true, removed: cfg.configPath, message: '本机配置已删除（服务端 Key 不受影响；要吊销请到 Settings → API Keys）。' }));
+  } else {
+    console.log(JSON.stringify({ ok: true, removed: null, message: '没有本机配置文件，无需操作。' }));
+  }
+  fs.rmSync(PENDING_FILE(), { force: true });
+}
+
 async function cmdLink(cfg, positionals) {
   const id = positionals[0];
   if (!id) fail('用法：tramito.js link <renderId>');
@@ -449,7 +649,7 @@ function fail(message) {
   process.exit(2);
 }
 
-const COMMANDS = new Set(['spec', 'validate', 'render', 'usage', 'download', 'link']);
+const COMMANDS = new Set(['spec', 'validate', 'render', 'usage', 'download', 'link', 'login', 'logout']);
 
 async function main() {
   const [cmd, ...rest] = process.argv.slice(2);
@@ -457,11 +657,13 @@ async function main() {
   if (!cmd || !COMMANDS.has(cmd)) {
     fail(`未知命令：${cmd || '(空)'}。可用：${[...COMMANDS].join(' | ')}`);
   }
-  const { positionals, opts } = parseArgs(rest);
+  const { positionals, opts, flags } = parseArgs(rest);
   try {
     const cfg = loadConfig();
-    // spec 是公开端点：配置坏了也能跑（configError 时 baseUrl 已回落默认值）
+    // spec / login / logout 不读已有凭证：配置坏了也能跑（configError 时 baseUrl 已回落默认值）
     if (cmd === 'spec') return await cmdSpec(cfg, opts);
+    if (cmd === 'login') return await cmdLogin(cfg, flags);
+    if (cmd === 'logout') return await cmdLogout(cfg);
     requireAuth(cfg);
     switch (cmd) {
       case 'validate': return await cmdValidate(cfg, positionals);

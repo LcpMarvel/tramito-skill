@@ -39,18 +39,18 @@ Requires **Node.js ≥ 18 or Bun** and outbound HTTPS (default `https://tramito.
 
 Package and upload: `./package.sh` produces `dist/tramito-bpmn-assistant.zip` → Skills marketplace → Add skill → upload. Install and usage verified in the WorkBuddy host (2026-09). Details in [`docs/workbuddy.md`](docs/workbuddy.md).
 
-### Configure your own credentials (required — no shared key is bundled)
+### Configure credentials (required — no shared key is bundled)
 
-1. Register at [tramito.ai](https://tramito.ai) and verify your email.
-2. Create a key at Settings → API Keys (`tmt_live_` prefix).
-3. Configure (env vars recommended; never paste keys into chat, files or repos):
+One command to log in (**no key copy-pasting**):
 
 ```bash
-export TRAMITO_API_KEY=tmt_live_yourkey
-export TRAMITO_BASE_URL=https://tramito.ai   # only for self-hosted deployments
+node skill/scripts/tramito.js login
 ```
 
-or write `~/.tramito/config.json`: `{"apiKey": "tmt_live_...", "baseUrl": "https://tramito.ai"}`.
+- The terminal prints a link — open it in your browser (sign in to tramito.ai, registering and verifying your email first if needed), confirm the pairing code and click “Authorize this device”. The page creates a key automatically; the CLI writes it to `~/.tramito/config.json` and verifies it.
+- No browser (SSH/CI): `node skill/scripts/tramito.js login --paste` and paste your key (hidden input, auto-saved). Keys are created at tramito.ai → Settings → API Keys.
+- Advanced: env var `TRAMITO_API_KEY` (optionally `TRAMITO_BASE_URL` for self-hosted), or write `~/.tramito/config.json` directly.
+- **Never paste keys into chat, process files or repos**; revoke leaked keys in Settings → API Keys. `tramito.js logout` removes the local config (server-side key unaffected).
 
 ## Quota (per account/org, shared across all keys & devices)
 
