@@ -55,6 +55,9 @@ jobs:
     permissions:
       contents: write
     steps:
+      # --generate-notes 需要 git 历史，必须先 checkout
+      - uses: actions/checkout@v4
+
       - uses: actions/download-artifact@v4
         with:
           name: tramito-bpmn-assistant
