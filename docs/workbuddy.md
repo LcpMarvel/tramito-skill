@@ -1,4 +1,4 @@
-# WorkBuddy 安装指引（目标平台，宿主实测待完成）
+# WorkBuddy 安装指引（已实测平台）
 
 ## 打包
 
@@ -9,7 +9,7 @@ cd tramito-skill
 ./package.sh          # 产出 dist/tramito-bpmn-assistant.zip，并检查无真实凭证混入
 ```
 
-若上传后解析失败，可尝试改为把 `skill/` 整个目录作为 zip 内的一层（即 zip 根下是 `skill/SKILL.md`）再传一次——WorkBuddy 导入器对两种布局的兼容性尚未在宿主内验证（B40 待办）。上传前请复核 [WorkBuddy Skill 文档](https://open.workbuddy.cn/docs/skill) 的最新要求。
+若上传后解析失败，可尝试改为把 `skill/` 整个目录作为 zip 内的一层（即 zip 根下是 `skill/SKILL.md`）再传一次。上传前请复核 [WorkBuddy Skill 文档](https://open.workbuddy.cn/docs/skill) 的最新要求。
 
 zip 内结构（`package.sh` 产出的根布局；SKILL.md 是 WorkBuddy 唯一必须文件）：
 
@@ -45,7 +45,8 @@ zip 内结构（`package.sh` 产出的根布局；SKILL.md 是 WorkBuddy 唯一�
 - 运行脚本的宿主需要 **Node.js ≥ 18 或 Bun**（`node scripts/tramito.js usage` 自检）。
 - 需要能访问 `TRAMITO_BASE_URL`（默认 `https://tramito.ai`）的出站 HTTPS。
 
-## 实测状态
+## 实测状态（2026-09）
 
-- **Claude Code 宿主**：已实测通过（技能装进 `.claude/skills/`，真实对话完成 新建 → 连续修改 → 解释不扣次 的完整闭环）。
-- **WorkBuddy 宿主**：尚未实测——目前完成的是本地全链路验证（CLI 对真实 API 的 render/validate/usage/download，查看器页面浏览器实测），WorkBuddy 内的安装与运行待验证。平台规则可能变化；提交市场前请复核 [WorkBuddy Skill 文档](https://open.workbuddy.cn/docs/skill)。
+- **WorkBuddy 宿主**：✅ 已实测通过——`package.sh` 产出的 zip（SKILL.md 位于根布局）在宿主内完成安装与使用。
+- **Claude Code 宿主**：✅ 已实测通过——技能装进 `.claude/skills/`，真实对话完成 新建 → 连续修改 → 解释不扣次 的完整闭环。
+- 服务端与 CLI 另经本地全链路验证（额度边界/幂等/并发/隔离、查看器页面）。平台规则可能变化；提交市场前请复核 [WorkBuddy Skill 文档](https://open.workbuddy.cn/docs/skill)。

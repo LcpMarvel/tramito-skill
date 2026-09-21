@@ -35,9 +35,9 @@ cp -R skill ~/.claude/skills/tramito-bpmn-assistant
 
 运行环境需要 **Node.js ≥ 18 或 Bun**，以及出站 HTTPS（默认 `https://tramito.ai`）。
 
-### WorkBuddy（待宿主实测）
+### WorkBuddy（已实测）
 
-打包并上传：`./package.sh` 产出 `dist/tramito-bpmn-assistant.zip` → 技能市场 →【添加技能】上传。细节见 [`docs/workbuddy.md`](docs/workbuddy.md)。
+打包并上传：`./package.sh` 产出 `dist/tramito-bpmn-assistant.zip` → 技能市场 →【添加技能】上传。安装与使用已在 WorkBuddy 宿主内实测通过（2026-09）。细节见 [`docs/workbuddy.md`](docs/workbuddy.md)。
 
 ### 配置你自己的凭证（必做，技能不内置任何共享 Key）
 

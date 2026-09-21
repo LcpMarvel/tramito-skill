@@ -35,9 +35,9 @@ cp -R skill ~/.claude/skills/tramito-bpmn-assistant
 
 Requires **Node.js ≥ 18 or Bun** and outbound HTTPS (default `https://tramito.ai`).
 
-### WorkBuddy (host testing pending)
+### WorkBuddy (tested)
 
-Package and upload: `./package.sh` produces `dist/tramito-bpmn-assistant.zip` → Skills marketplace → Add skill → upload. Details in [`docs/workbuddy.md`](docs/workbuddy.md).
+Package and upload: `./package.sh` produces `dist/tramito-bpmn-assistant.zip` → Skills marketplace → Add skill → upload. Install and usage verified in the WorkBuddy host (2026-09). Details in [`docs/workbuddy.md`](docs/workbuddy.md).
 
 ### Configure your own credentials (required — no shared key is bundled)
 
