@@ -1,0 +1,143 @@
+{
+  "pools": [
+    {
+      "id": "pool_1",
+      "name": "公司"
+    }
+  ],
+  "lanes": [
+    {
+      "id": "lane_2",
+      "name": "申请人",
+      "pool": "pool_1"
+    },
+    {
+      "id": "lane_3",
+      "name": "审批人",
+      "pool": "pool_1"
+    },
+    {
+      "id": "lane_4",
+      "name": "财务",
+      "pool": "pool_1"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "start_5",
+      "type": "startEvent",
+      "name": "提交报销",
+      "lane": "lane_2"
+    },
+    {
+      "id": "task_6",
+      "type": "userTask",
+      "name": "填写报销单",
+      "lane": "lane_2"
+    },
+    {
+      "id": "task_7",
+      "type": "userTask",
+      "name": "经理审批",
+      "lane": "lane_3"
+    },
+    {
+      "id": "gateway_8",
+      "type": "exclusiveGateway",
+      "name": "金额是否超过5000元",
+      "lane": "lane_3",
+      "default": "flow_18"
+    },
+    {
+      "id": "task_9",
+      "type": "userTask",
+      "name": "总经理审批",
+      "lane": "lane_3"
+    },
+    {
+      "id": "gateway_11",
+      "type": "exclusiveGateway",
+      "name": "材料是否齐全",
+      "lane": "lane_4",
+      "default": "flow_22"
+    },
+    {
+      "id": "task_10",
+      "type": "serviceTask",
+      "name": "财务打款",
+      "lane": "lane_4"
+    },
+    {
+      "id": "task_12",
+      "type": "sendTask",
+      "name": "通知补材料",
+      "lane": "lane_4"
+    },
+    {
+      "id": "end_13",
+      "type": "endEvent",
+      "name": "报销完成",
+      "lane": "lane_4"
+    }
+  ],
+  "edges": [
+    {
+      "id": "flow_14",
+      "source": "start_5",
+      "target": "task_6"
+    },
+    {
+      "id": "flow_15",
+      "source": "task_6",
+      "target": "task_7"
+    },
+    {
+      "id": "flow_16",
+      "source": "task_7",
+      "target": "gateway_8"
+    },
+    {
+      "id": "flow_17",
+      "source": "gateway_8",
+      "target": "task_9",
+      "name": "超过5000元",
+      "condition": "${amount > 5000}"
+    },
+    {
+      "id": "flow_18",
+      "source": "gateway_8",
+      "target": "gateway_11",
+      "name": "不超过5000元",
+      "isDefault": true
+    },
+    {
+      "id": "flow_19",
+      "source": "task_9",
+      "target": "gateway_11"
+    },
+    {
+      "id": "flow_20",
+      "source": "gateway_11",
+      "target": "task_10",
+      "name": "材料齐全",
+      "condition": "${docsComplete}"
+    },
+    {
+      "id": "flow_21",
+      "source": "task_10",
+      "target": "end_13"
+    },
+    {
+      "id": "flow_22",
+      "source": "gateway_11",
+      "target": "task_12",
+      "name": "缺材料",
+      "isDefault": true
+    },
+    {
+      "id": "flow_23",
+      "source": "task_12",
+      "target": "task_6"
+    }
+  ]
+}

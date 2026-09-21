@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="bpmn-elk-layout" exporterVersion="1.0.0">
+  <bpmn:collaboration id="collaboration_1">
+    <bpmn:participant id="pool_1" name="客户" processRef="pool_1_process" />
+    <bpmn:participant id="pool_2" name="商家" processRef="pool_2_process" />
+    <bpmn:participant id="pool_3" name="第三方物流" />
+    <bpmn:messageFlow id="flow_15" sourceRef="task_6" targetRef="start_12" />
+    <bpmn:messageFlow id="flow_21" name="委托配送" sourceRef="task_9" targetRef="pool_3" />
+    <bpmn:messageFlow id="flow_22" sourceRef="pool_3" targetRef="task_20" />
+  </bpmn:collaboration>
+  <bpmn:process id="pool_1_process" name="客户" isExecutable="true">
+    <bpmn:startEvent id="start_4" name="需要购买商品">
+      <bpmn:outgoing>flow_13</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:userTask id="task_5" name="浏览并下单">
+      <bpmn:incoming>flow_13</bpmn:incoming>
+      <bpmn:outgoing>flow_14</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:sendTask id="task_6" name="支付订单">
+      <bpmn:incoming>flow_14</bpmn:incoming>
+    </bpmn:sendTask>
+    <bpmn:receiveTask id="task_20" name="签收商品">
+      <bpmn:outgoing>flow_23</bpmn:outgoing>
+    </bpmn:receiveTask>
+    <bpmn:endEvent id="end_10" name="收到商品">
+      <bpmn:incoming>flow_23</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="flow_13" sourceRef="start_4" targetRef="task_5" />
+    <bpmn:sequenceFlow id="flow_14" sourceRef="task_5" targetRef="task_6" />
+    <bpmn:sequenceFlow id="flow_23" sourceRef="task_20" targetRef="end_10" />
+  </bpmn:process>
+  <bpmn:process id="pool_2_process" name="商家" isExecutable="true">
+    <bpmn:startEvent id="start_12" name="收到新订单">
+      <bpmn:outgoing>flow_16</bpmn:outgoing>
+      <bpmn:messageEventDefinition />
+    </bpmn:startEvent>
+    <bpmn:receiveTask id="task_7" name="确认订单">
+      <bpmn:incoming>flow_16</bpmn:incoming>
+      <bpmn:outgoing>flow_17</bpmn:outgoing>
+    </bpmn:receiveTask>
+    <bpmn:userTask id="task_8" name="备货">
+      <bpmn:incoming>flow_17</bpmn:incoming>
+      <bpmn:outgoing>flow_18</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:sendTask id="task_9" name="发货">
+      <bpmn:incoming>flow_18</bpmn:incoming>
+      <bpmn:outgoing>flow_19</bpmn:outgoing>
+    </bpmn:sendTask>
+    <bpmn:endEvent id="end_11" name="订单完成">
+      <bpmn:incoming>flow_19</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="flow_16" sourceRef="start_12" targetRef="task_7" />
+    <bpmn:sequenceFlow id="flow_17" sourceRef="task_7" targetRef="task_8" />
+    <bpmn:sequenceFlow id="flow_18" sourceRef="task_8" targetRef="task_9" />
+    <bpmn:sequenceFlow id="flow_19" sourceRef="task_9" targetRef="end_11" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_definitions_1" name="BPMNDiagram">
+    <bpmndi:BPMNPlane id="BPMNPlane_definitions_1" bpmnElement="collaboration_1">
+      <bpmndi:BPMNShape id="collaboration_1_di" bpmnElement="collaboration_1">
+        <dc:Bounds x="0" y="0" width="1368" height="448" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="pool_1_di" bpmnElement="pool_1" isHorizontal="true">
+        <dc:Bounds x="0" y="0" width="774" height="144" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="start_4_di" bpmnElement="start_4">
+        <dc:Bounds x="328" y="54" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="304" y="94" width="84" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_5_di" bpmnElement="task_5">
+        <dc:Bounds x="444" y="32" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_6_di" bpmnElement="task_6">
+        <dc:Bounds x="624" y="32" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_20_di" bpmnElement="task_20">
+        <dc:Bounds x="62" y="32" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="end_10_di" bpmnElement="end_10">
+        <dc:Bounds x="242" y="54" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="232" y="94" width="56" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="pool_2_di" bpmnElement="pool_2" isHorizontal="true">
+        <dc:Bounds x="594" y="174" width="774" height="144" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="start_12_di" bpmnElement="start_12">
+        <dc:Bounds x="656" y="228" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="639" y="268" width="70" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_7_di" bpmnElement="task_7">
+        <dc:Bounds x="772" y="206" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_8_di" bpmnElement="task_8">
+        <dc:Bounds x="952" y="206" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_9_di" bpmnElement="task_9">
+        <dc:Bounds x="1132" y="206" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="end_11_di" bpmnElement="end_11">
+        <dc:Bounds x="1312" y="228" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1302" y="268" width="56" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="pool_3_di" bpmnElement="pool_3" isHorizontal="true">
+        <dc:Bounds x="0" y="348" width="774" height="100" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="flow_13_di" bpmnElement="flow_13">
+        <di:waypoint x="364" y="72" />
+        <di:waypoint x="444" y="72" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow_14_di" bpmnElement="flow_14">
+        <di:waypoint x="544" y="72" />
+        <di:waypoint x="624" y="72" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow_23_di" bpmnElement="flow_23">
+        <di:waypoint x="162" y="72" />
+        <di:waypoint x="242" y="72" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow_16_di" bpmnElement="flow_16">
+        <di:waypoint x="692" y="246" />
+        <di:waypoint x="772" y="246" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow_17_di" bpmnElement="flow_17">
+        <di:waypoint x="872" y="246" />
+        <di:waypoint x="952" y="246" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow_18_di" bpmnElement="flow_18">
+        <di:waypoint x="1052" y="246" />
+        <di:waypoint x="1132" y="246" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow_19_di" bpmnElement="flow_19">
+        <di:waypoint x="1232" y="246" />
+        <di:waypoint x="1312" y="246" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow_15_di" bpmnElement="flow_15">
+        <di:waypoint x="674" y="112" />
+        <di:waypoint x="674" y="228" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow_21_di" bpmnElement="flow_21">
+        <di:waypoint x="1182" y="286" />
+        <di:waypoint x="1182" y="317" />
+        <di:waypoint x="387" y="317" />
+        <di:waypoint x="387" y="348" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow_22_di" bpmnElement="flow_22">
+        <di:waypoint x="387" y="348" />
+        <di:waypoint x="387" y="230" />
+        <di:waypoint x="112" y="230" />
+        <di:waypoint x="112" y="112" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

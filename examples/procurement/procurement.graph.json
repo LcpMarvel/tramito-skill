@@ -1,0 +1,101 @@
+{
+  "nodes": [
+    {
+      "id": "start_1",
+      "type": "startEvent",
+      "name": "提出物料需求"
+    },
+    {
+      "id": "gate_2",
+      "type": "exclusiveGateway",
+      "name": "库存是否充足",
+      "default": "flow_8"
+    },
+    {
+      "id": "task_3",
+      "type": "userTask",
+      "name": "仓库领用"
+    },
+    {
+      "id": "task_4",
+      "type": "userTask",
+      "name": "创建采购单"
+    },
+    {
+      "id": "task_5",
+      "type": "userTask",
+      "name": "到货验收"
+    },
+    {
+      "id": "gate_6",
+      "type": "exclusiveGateway",
+      "name": "验收是否合格",
+      "default": "flow_12"
+    },
+    {
+      "id": "task_7",
+      "type": "sendTask",
+      "name": "办理退货"
+    },
+    {
+      "id": "end_8",
+      "type": "endEvent",
+      "name": "需求满足"
+    }
+  ],
+  "edges": [
+    {
+      "id": "flow_9",
+      "source": "start_1",
+      "target": "gate_2"
+    },
+    {
+      "id": "flow_10",
+      "source": "gate_2",
+      "target": "task_3",
+      "name": "充足",
+      "condition": "${stockEnough}"
+    },
+    {
+      "id": "flow_8",
+      "source": "gate_2",
+      "target": "task_4",
+      "name": "不足",
+      "isDefault": true
+    },
+    {
+      "id": "flow_11",
+      "source": "task_3",
+      "target": "end_8"
+    },
+    {
+      "id": "flow_13",
+      "source": "task_4",
+      "target": "task_5"
+    },
+    {
+      "id": "flow_14",
+      "source": "task_5",
+      "target": "gate_6"
+    },
+    {
+      "id": "flow_15",
+      "source": "gate_6",
+      "target": "end_8",
+      "name": "合格",
+      "condition": "${passed}"
+    },
+    {
+      "id": "flow_12",
+      "source": "gate_6",
+      "target": "task_7",
+      "name": "不合格",
+      "isDefault": true
+    },
+    {
+      "id": "flow_16",
+      "source": "task_7",
+      "target": "task_4"
+    }
+  ]
+}

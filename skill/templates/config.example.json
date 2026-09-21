@@ -1,0 +1,5 @@
+{
+  "$comment": "复制到 ~/.tramito/config.json 并填入你自己的 Key。baseUrl 仅在自建/私有部署时修改。",
+  "apiKey": "tmt_live_在这里填你自己的Key",
+  "baseUrl": "https://tramito.ai"
+}

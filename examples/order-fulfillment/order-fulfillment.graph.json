@@ -1,0 +1,136 @@
+{
+  "pools": [
+    {
+      "id": "pool_1",
+      "name": "客户"
+    },
+    {
+      "id": "pool_2",
+      "name": "商家"
+    },
+    {
+      "id": "pool_3",
+      "name": "第三方物流",
+      "isBlackBox": true
+    }
+  ],
+  "nodes": [
+    {
+      "id": "start_4",
+      "type": "startEvent",
+      "name": "需要购买商品",
+      "pool": "pool_1"
+    },
+    {
+      "id": "task_5",
+      "type": "userTask",
+      "name": "浏览并下单",
+      "pool": "pool_1"
+    },
+    {
+      "id": "task_6",
+      "type": "sendTask",
+      "name": "支付订单",
+      "pool": "pool_1"
+    },
+    {
+      "id": "start_12",
+      "type": "startEvent",
+      "name": "收到新订单",
+      "pool": "pool_2",
+      "eventDefinitionType": "message"
+    },
+    {
+      "id": "task_7",
+      "type": "receiveTask",
+      "name": "确认订单",
+      "pool": "pool_2"
+    },
+    {
+      "id": "task_8",
+      "type": "userTask",
+      "name": "备货",
+      "pool": "pool_2"
+    },
+    {
+      "id": "task_9",
+      "type": "sendTask",
+      "name": "发货",
+      "pool": "pool_2"
+    },
+    {
+      "id": "end_11",
+      "type": "endEvent",
+      "name": "订单完成",
+      "pool": "pool_2"
+    },
+    {
+      "id": "task_20",
+      "type": "receiveTask",
+      "name": "签收商品",
+      "pool": "pool_1"
+    },
+    {
+      "id": "end_10",
+      "type": "endEvent",
+      "name": "收到商品",
+      "pool": "pool_1"
+    }
+  ],
+  "edges": [
+    {
+      "id": "flow_13",
+      "source": "start_4",
+      "target": "task_5"
+    },
+    {
+      "id": "flow_14",
+      "source": "task_5",
+      "target": "task_6"
+    },
+    {
+      "id": "flow_15",
+      "source": "task_6",
+      "target": "start_12",
+      "type": "messageFlow"
+    },
+    {
+      "id": "flow_16",
+      "source": "start_12",
+      "target": "task_7"
+    },
+    {
+      "id": "flow_17",
+      "source": "task_7",
+      "target": "task_8"
+    },
+    {
+      "id": "flow_18",
+      "source": "task_8",
+      "target": "task_9"
+    },
+    {
+      "id": "flow_19",
+      "source": "task_9",
+      "target": "end_11"
+    },
+    {
+      "id": "flow_21",
+      "source": "task_9",
+      "target": "pool_3",
+      "name": "委托配送",
+      "type": "messageFlow"
+    },
+    {
+      "id": "flow_22",
+      "source": "pool_3",
+      "target": "task_20",
+      "type": "messageFlow"
+    },
+    {
+      "id": "flow_23",
+      "source": "task_20",
+      "target": "end_10"
+    }
+  ]
+}

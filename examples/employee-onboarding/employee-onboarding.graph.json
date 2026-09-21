@@ -1,0 +1,117 @@
+{
+  "pools": [
+    {
+      "id": "pool_1",
+      "name": "公司"
+    }
+  ],
+  "lanes": [
+    {
+      "id": "lane_2",
+      "name": "HR",
+      "pool": "pool_1"
+    },
+    {
+      "id": "lane_3",
+      "name": "IT",
+      "pool": "pool_1"
+    },
+    {
+      "id": "lane_4",
+      "name": "行政",
+      "pool": "pool_1"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "start_5",
+      "type": "startEvent",
+      "name": "发出入职通知",
+      "lane": "lane_2"
+    },
+    {
+      "id": "task_6",
+      "type": "userTask",
+      "name": "HR审核入职材料",
+      "lane": "lane_2"
+    },
+    {
+      "id": "gate_7",
+      "type": "parallelGateway",
+      "name": "并行准备",
+      "lane": "lane_2"
+    },
+    {
+      "id": "task_8",
+      "type": "serviceTask",
+      "name": "IT开通账号",
+      "lane": "lane_3"
+    },
+    {
+      "id": "task_9",
+      "type": "userTask",
+      "name": "行政配置工位",
+      "lane": "lane_4"
+    },
+    {
+      "id": "gate_10",
+      "type": "parallelGateway",
+      "name": "等待全部完成",
+      "lane": "lane_2"
+    },
+    {
+      "id": "task_11",
+      "type": "sendTask",
+      "name": "通知员工报到",
+      "lane": "lane_2"
+    },
+    {
+      "id": "end_12",
+      "type": "endEvent",
+      "name": "入职完成",
+      "lane": "lane_2"
+    }
+  ],
+  "edges": [
+    {
+      "id": "flow_13",
+      "source": "start_5",
+      "target": "task_6"
+    },
+    {
+      "id": "flow_14",
+      "source": "task_6",
+      "target": "gate_7"
+    },
+    {
+      "id": "flow_15",
+      "source": "gate_7",
+      "target": "task_8"
+    },
+    {
+      "id": "flow_16",
+      "source": "gate_7",
+      "target": "task_9"
+    },
+    {
+      "id": "flow_17",
+      "source": "task_8",
+      "target": "gate_10"
+    },
+    {
+      "id": "flow_18",
+      "source": "task_9",
+      "target": "gate_10"
+    },
+    {
+      "id": "flow_19",
+      "source": "gate_10",
+      "target": "task_11"
+    },
+    {
+      "id": "flow_20",
+      "source": "task_11",
+      "target": "end_12"
+    }
+  ]
+}
