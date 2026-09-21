@@ -2,52 +2,52 @@
 <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="bpmn-elk-layout" exporterVersion="1.0.0">
   <bpmn:process id="process_root" name="流程" isExecutable="true">
     <bpmn:startEvent id="start_1" name="提出物料需求">
-      <bpmn:outgoing>flow_9</bpmn:outgoing>
-    </bpmn:startEvent>
-    <bpmn:exclusiveGateway id="gate_2" name="库存是否充足" default="flow_8">
-      <bpmn:incoming>flow_9</bpmn:incoming>
       <bpmn:outgoing>flow_10</bpmn:outgoing>
-      <bpmn:outgoing>flow_8</bpmn:outgoing>
-    </bpmn:exclusiveGateway>
-    <bpmn:userTask id="task_3" name="仓库领用">
+    </bpmn:startEvent>
+    <bpmn:exclusiveGateway id="gate_2" name="库存是否充足" default="flow_9">
       <bpmn:incoming>flow_10</bpmn:incoming>
       <bpmn:outgoing>flow_11</bpmn:outgoing>
+      <bpmn:outgoing>flow_9</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:userTask id="task_3" name="仓库领用">
+      <bpmn:incoming>flow_11</bpmn:incoming>
+      <bpmn:outgoing>flow_12</bpmn:outgoing>
     </bpmn:userTask>
     <bpmn:userTask id="task_4" name="创建采购单">
-      <bpmn:incoming>flow_8</bpmn:incoming>
-      <bpmn:incoming>flow_16</bpmn:incoming>
-      <bpmn:outgoing>flow_13</bpmn:outgoing>
-    </bpmn:userTask>
-    <bpmn:userTask id="task_5" name="到货验收">
-      <bpmn:incoming>flow_13</bpmn:incoming>
+      <bpmn:incoming>flow_9</bpmn:incoming>
+      <bpmn:incoming>flow_17</bpmn:incoming>
       <bpmn:outgoing>flow_14</bpmn:outgoing>
     </bpmn:userTask>
-    <bpmn:exclusiveGateway id="gate_6" name="验收是否合格" default="flow_12">
+    <bpmn:userTask id="task_5" name="到货验收">
       <bpmn:incoming>flow_14</bpmn:incoming>
       <bpmn:outgoing>flow_15</bpmn:outgoing>
-      <bpmn:outgoing>flow_12</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:exclusiveGateway id="gate_6" name="验收是否合格" default="flow_13">
+      <bpmn:incoming>flow_15</bpmn:incoming>
+      <bpmn:outgoing>flow_16</bpmn:outgoing>
+      <bpmn:outgoing>flow_13</bpmn:outgoing>
     </bpmn:exclusiveGateway>
     <bpmn:sendTask id="task_7" name="办理退货">
-      <bpmn:incoming>flow_12</bpmn:incoming>
-      <bpmn:outgoing>flow_16</bpmn:outgoing>
+      <bpmn:incoming>flow_13</bpmn:incoming>
+      <bpmn:outgoing>flow_17</bpmn:outgoing>
     </bpmn:sendTask>
     <bpmn:endEvent id="end_8" name="需求满足">
-      <bpmn:incoming>flow_11</bpmn:incoming>
-      <bpmn:incoming>flow_15</bpmn:incoming>
+      <bpmn:incoming>flow_12</bpmn:incoming>
+      <bpmn:incoming>flow_16</bpmn:incoming>
     </bpmn:endEvent>
-    <bpmn:sequenceFlow id="flow_9" sourceRef="start_1" targetRef="gate_2" />
-    <bpmn:sequenceFlow id="flow_10" name="充足" sourceRef="gate_2" targetRef="task_3">
+    <bpmn:sequenceFlow id="flow_10" sourceRef="start_1" targetRef="gate_2" />
+    <bpmn:sequenceFlow id="flow_11" name="充足" sourceRef="gate_2" targetRef="task_3">
       <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${stockEnough}</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
-    <bpmn:sequenceFlow id="flow_8" name="不足" sourceRef="gate_2" targetRef="task_4" />
-    <bpmn:sequenceFlow id="flow_11" sourceRef="task_3" targetRef="end_8" />
-    <bpmn:sequenceFlow id="flow_13" sourceRef="task_4" targetRef="task_5" />
-    <bpmn:sequenceFlow id="flow_14" sourceRef="task_5" targetRef="gate_6" />
-    <bpmn:sequenceFlow id="flow_15" name="合格" sourceRef="gate_6" targetRef="end_8">
+    <bpmn:sequenceFlow id="flow_9" name="不足" sourceRef="gate_2" targetRef="task_4" />
+    <bpmn:sequenceFlow id="flow_12" sourceRef="task_3" targetRef="end_8" />
+    <bpmn:sequenceFlow id="flow_14" sourceRef="task_4" targetRef="task_5" />
+    <bpmn:sequenceFlow id="flow_15" sourceRef="task_5" targetRef="gate_6" />
+    <bpmn:sequenceFlow id="flow_16" name="合格" sourceRef="gate_6" targetRef="end_8">
       <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${passed}</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
-    <bpmn:sequenceFlow id="flow_12" name="不合格" sourceRef="gate_6" targetRef="task_7" />
-    <bpmn:sequenceFlow id="flow_16" sourceRef="task_7" targetRef="task_4" />
+    <bpmn:sequenceFlow id="flow_13" name="不合格" sourceRef="gate_6" targetRef="task_7" />
+    <bpmn:sequenceFlow id="flow_17" sourceRef="task_7" targetRef="task_4" />
   </bpmn:process>
   <bpmndi:BPMNDiagram id="BPMNDiagram_definitions_1" name="BPMNDiagram">
     <bpmndi:BPMNPlane id="BPMNPlane_definitions_1" bpmnElement="process_root">
@@ -90,47 +90,47 @@
           <dc:Bounds x="788" y="159.83333333333334" width="56" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNEdge id="flow_9_di" bpmnElement="flow_9">
+      <bpmndi:BPMNEdge id="flow_10_di" bpmnElement="flow_10">
         <di:waypoint x="98" y="193.83333333333334" />
         <di:waypoint x="178" y="193.83333333333334" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="flow_10_di" bpmnElement="flow_10">
+      <bpmndi:BPMNEdge id="flow_11_di" bpmnElement="flow_11">
         <di:waypoint x="203" y="168.83333333333334" />
         <di:waypoint x="203" y="72" />
         <di:waypoint x="488" y="72" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="flow_8_di" bpmnElement="flow_8">
+      <bpmndi:BPMNEdge id="flow_9_di" bpmnElement="flow_9">
         <di:waypoint x="203" y="218.83333333333334" />
         <di:waypoint x="203" y="270.5" />
         <di:waypoint x="308" y="270.5" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="flow_11_di" bpmnElement="flow_11">
+      <bpmndi:BPMNEdge id="flow_12_di" bpmnElement="flow_12">
         <di:waypoint x="588" y="72" />
         <di:waypoint x="693" y="72" />
         <di:waypoint x="693" y="137.83333333333334" />
         <di:waypoint x="798" y="137.83333333333334" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="flow_13_di" bpmnElement="flow_13">
+      <bpmndi:BPMNEdge id="flow_14_di" bpmnElement="flow_14">
         <di:waypoint x="408" y="270.5" />
         <di:waypoint x="448" y="270.5" />
         <di:waypoint x="448" y="212" />
         <di:waypoint x="488" y="212" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="flow_14_di" bpmnElement="flow_14">
+      <bpmndi:BPMNEdge id="flow_15_di" bpmnElement="flow_15">
         <di:waypoint x="588" y="212" />
         <di:waypoint x="668" y="212" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="flow_15_di" bpmnElement="flow_15">
+      <bpmndi:BPMNEdge id="flow_16_di" bpmnElement="flow_16">
         <di:waypoint x="693" y="187" />
         <di:waypoint x="693" y="137.83333333333334" />
         <di:waypoint x="798" y="137.83333333333334" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="flow_12_di" bpmnElement="flow_12">
+      <bpmndi:BPMNEdge id="flow_13_di" bpmnElement="flow_13">
         <di:waypoint x="693" y="237" />
         <di:waypoint x="693" y="274.6666666666667" />
         <di:waypoint x="798" y="274.6666666666667" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="flow_16_di" bpmnElement="flow_16">
+      <bpmndi:BPMNEdge id="flow_17_di" bpmnElement="flow_17">
         <di:waypoint x="848" y="314.6666666666667" />
         <di:waypoint x="848" y="338.6666666666667" />
         <di:waypoint x="358" y="338.6666666666667" />

@@ -9,7 +9,7 @@
       "id": "gate_2",
       "type": "exclusiveGateway",
       "name": "库存是否充足",
-      "default": "flow_8"
+      "default": "flow_9"
     },
     {
       "id": "task_3",
@@ -30,7 +30,7 @@
       "id": "gate_6",
       "type": "exclusiveGateway",
       "name": "验收是否合格",
-      "default": "flow_12"
+      "default": "flow_13"
     },
     {
       "id": "task_7",
@@ -45,55 +45,55 @@
   ],
   "edges": [
     {
-      "id": "flow_9",
+      "id": "flow_10",
       "source": "start_1",
       "target": "gate_2"
     },
     {
-      "id": "flow_10",
+      "id": "flow_11",
       "source": "gate_2",
       "target": "task_3",
       "name": "充足",
       "condition": "${stockEnough}"
     },
     {
-      "id": "flow_8",
+      "id": "flow_9",
       "source": "gate_2",
       "target": "task_4",
       "name": "不足",
       "isDefault": true
     },
     {
-      "id": "flow_11",
+      "id": "flow_12",
       "source": "task_3",
       "target": "end_8"
     },
     {
-      "id": "flow_13",
+      "id": "flow_14",
       "source": "task_4",
       "target": "task_5"
     },
     {
-      "id": "flow_14",
+      "id": "flow_15",
       "source": "task_5",
       "target": "gate_6"
     },
     {
-      "id": "flow_15",
+      "id": "flow_16",
       "source": "gate_6",
       "target": "end_8",
       "name": "合格",
       "condition": "${passed}"
     },
     {
-      "id": "flow_12",
+      "id": "flow_13",
       "source": "gate_6",
       "target": "task_7",
       "name": "不合格",
       "isDefault": true
     },
     {
-      "id": "flow_16",
+      "id": "flow_17",
       "source": "task_7",
       "target": "task_4"
     }

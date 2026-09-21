@@ -7,9 +7,17 @@ OUT=dist/tramito-bpmn-assistant.zip
 rm -rf dist "$OUT"
 mkdir -p dist
 
-# 安全检查：安装包不得包含任何真实凭证（文档里的前缀说明/占位符不算）
-if grep -rEn 'tmt_live_[A-Za-z0-9_-]{20,}' skill/ 2>/dev/null | grep -v '在这里填'; then
-  echo "✗ skill/ 内发现疑似真实 API Key（长随机串），中止打包" >&2
+# 安全检查：安装包不得包含任何真实凭证。fail-closed：grep 报错（退出码≥2）也视为失败。
+# 不做行过滤——占位符 tmt_live_在这里填… 本就匹配不到 20+ 连续 [A-Za-z0-9_-]，任何 -v 都只会误藏真 Key。
+leaks=$(grep -rEn 'tmt_live_[A-Za-z0-9_-]{20,}' skill/)
+status=$?
+if [ $status -ge 2 ]; then
+  echo "✗ 凭证检查无法执行（grep 退出码 $status），中止打包" >&2
+  exit 1
+fi
+if [ -n "$leaks" ]; then
+  echo "✗ skill/ 内发现疑似真实 API Key（长随机串），中止打包：" >&2
+  echo "$leaks" >&2
   exit 1
 fi
 

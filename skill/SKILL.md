@@ -84,7 +84,7 @@ node scripts/tramito.js render expense.graph.json --out <用户指定目录或�
 
 向用户交付时：**给出两个文件的真实路径 + 查看器链接**；宿主支持嵌入网页时可用 `viewerUrl&embed=1`（无界面嵌入版）直接展示。要 PNG 就引导用户打开链接点「导出 PNG」。不要只贴一大段 XML 或 Base64 冒充交付。
 
-**链接交付纪律**：viewer URL 里的 token 是长随机串，**凭记忆重打必错**（实测单字符转写损耗即失效）。给用户链接时必须**逐字引用 CLI stdout 原文**，或引用 `<name>.viewer.url.txt` 文件内容。用户反馈"链接无效/过期"时先执行 `node scripts/tramito.js link <id>` 重新签发（产物仍在保留期内就不扣次、不重新转换）。说明：`.bpmn` 面向标准 BPMN 编辑器，不承诺无需配置即可部署到任意执行引擎。
+**链接交付纪律**：viewer URL 里的 token 是长随机串，**凭记忆重打必错**（实测单字符转写损耗即失效）。给用户链接时必须**逐字引用 CLI stdout 原文**，或引用 `<name>.viewer.url.txt` 文件内容。用户反馈"链接无效/过期"时先执行 `node scripts/tramito.js link <id>` 重新获取当前有效链接（产物仍在保留期内就不扣次、不重新转换）。说明：`.bpmn` 面向标准 BPMN 编辑器，不承诺无需配置即可部署到任意执行引擎。
 
 每次**实际成功并产出新结果**的转换计 1 次（免费账号每月 200 次；解释、查询、重新打开查看器链接不计次）。
 
@@ -110,10 +110,13 @@ node scripts/tramito.js render expense.graph.json --out <用户指定目录或�
 | `concurrency_limit` / `rate_limited` | 并发/频率超限 | 等 `retryAfterMs` 后重试；render 的幂等键由 graph 内容决定，同内容重跑只会回放同一结果，不会重复扣次 |
 | `render_timeout` / `render_failed` | 服务端转换失败/超时 | 失败不计次；可用同参数重试一次，仍失败则报告并保留草稿 |
 | `idempotency_conflict` | 同一幂等键绑定了不同内容 | 换新的转换请求重试（脚本会自动生成新键） |
-| `idempotency_window_expired` | 原产物已过 24h 保留期 | 告知需重新转换（会计 1 次），征得用户同意后再转 |
+| `idempotency_window_expired` | 原产物已过 24h 保留期 | CLI 已自动换新键重试（此为一次新转换）；失败才告知用户并征得同意 |
 | `artifact_expired` / `artifact_unavailable` | 产物过期/被清理 | 同上；查看器链接会显示明确的过期说明 |
 | `artifact_not_provided` | 请求了服务端 PNG | PNG 在查看器链接里由用户浏览器导出，服务端不提供文件 |
-| 用户报"链接打不开/无效" | 转写损耗或已过期 | `tramito.js link <id>` 重签（保留期内不扣次）；过期则征得同意后重新转换 |
+| 用户报"链接打不开/无效" | 转写损耗或已过期 | `tramito.js link <id>` 重取（保留期内不扣次）；过期则征得同意后重新转换 |
+| 表中未列出的其它 code（如 `http_429` / `not_found` / `cli_error`） | 未预期情况 | 把 message 原样转述给用户，不要盲目重试；`cli_error` 是用法/本地配置问题（退出码 2），看提示修命令或配置 |
+
+> CLI 退出码：0 成功；1 请求失败（服务端/网络）；2 用法或本地配置错误。stdout 是结果 JSON，错误一律走 stderr。
 | `network_error` / `http_5xx` | 网络/服务异常 | 原参数重试一次（同内容幂等保护，不会重复扣次）；仍失败报告 |
 | `invalid_response` | 服务返回非 JSON（代理页/网关页） | 检查 `TRAMITO_BASE_URL` 是否正确后重试 |
 | `download_failed` / `processing_timeout` | 产物下载失败 / 转换长时间未完成 | 输出里带 `id`：稍后用 `tramito.js download <id> bpmn` 恢复（不扣次），不要立即重新 render |

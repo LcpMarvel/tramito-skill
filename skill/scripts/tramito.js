@@ -7,22 +7,24 @@
  * 密钥只发往配置的服务地址（默认 https://tramito.ai），绝不写进流程文件或日志。
  *
  * 用法：
- *   node tramito.js spec [--out spec.md]          拉取输入规范（公开）
+ *   node tramito.js spec [--out spec.md]          拉取输入规范（公开，不读凭证）
  *   node tramito.js validate <graph.json>         结构校验（不消耗额度）
  *   node tramito.js render <graph.json> [--out DIR] [--name NAME]
- *                                                 转换：产出 NAME.bpmn + NAME.graph.json + 查看器链接
+ *                                                 转换：产出 NAME.bpmn + NAME.graph.json + NAME.viewer.url.txt
  *   node tramito.js usage                         查询本月额度 / 并发
  *   node tramito.js download <renderId> bpmn [--out FILE]
  *                                                 重新下载仍有效的 .bpmn（不再次计次）
- *   node tramito.js link <renderId>               重新签发查看器链接（产物仍有效时不扣次）
+ *   node tramito.js link <renderId>               重新获取当前有效的查看器链接（不扣次）
  *
- * 幂等语义：idempotencyKey 由 graph 内容哈希确定性生成——同一份内容在本组织
- * 24h 内重复 render（含进程重启后重试、网络失败后重跑）回放同一结果、只计 1 次；
- * 改动了内容自然就是新键、新转换。
+ * 幂等语义：idempotencyKey = graph 规范化内容（键排序稳定序列化）的哈希——同一份
+ * 内容在 24h 窗口内跨进程/跨重试回放同一结果、只计 1 次；窗口过期服务端拒绝时，
+ * CLI 自动加盐重试一次（此时即为一次新转换）。
+ *
+ * 退出码：0 成功；1 请求失败（服务端/网络错误）；2 用法或本地配置错误。
  */
 
 'use strict';
-const { createHash } = require('node:crypto');
+const { createHash, randomUUID } = require('node:crypto');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
@@ -35,24 +37,42 @@ function asString(v) {
   return String(v).trim();
 }
 
+/**
+ * 读取配置。解析失败不直接退出：返回 configError 由调用方决定——spec 不需要
+ * 凭证可以带病运行（baseUrl 回落默认），其余命令在用到时再报结构化错误。
+ */
 function loadConfig() {
   const configPath = path.join(os.homedir(), '.tramito', 'config.json');
   let fileCfg = {};
+  let configError = null;
   if (fs.existsSync(configPath)) {
     try {
       const parsed = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
-      if (parsed && typeof parsed === 'object') fileCfg = parsed;
-      else throw new Error('顶层不是 JSON 对象');
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) fileCfg = parsed;
+      else configError = '顶层不是 JSON 对象';
     } catch (e) {
-      fail(`配置文件无法解析（${e.message}）：${configPath}。请修正为 {"apiKey": "tmt_live_...", "baseUrl": "https://tramito.ai"}`);
+      configError = e.message;
     }
   }
-  const apiKey = (process.env.TRAMITO_API_KEY || asString(fileCfg.apiKey)).trim();
-  const baseUrl = (process.env.TRAMITO_BASE_URL || asString(fileCfg.baseUrl) || 'https://tramito.ai').trim().replace(/\/+$/, '');
-  return { apiKey, baseUrl, configPath };
+  // 空白字符串必须回落（先 trim 再判断，避免 ' ' 这种真值干扰 || 链）
+  const apiKey = asString(process.env.TRAMITO_API_KEY) || asString(fileCfg.apiKey);
+  const baseUrl = (asString(process.env.TRAMITO_BASE_URL) || asString(fileCfg.baseUrl) || 'https://tramito.ai')
+    .replace(/\/+$/, '');
+  if (!/^https?:\/\//.test(baseUrl)) {
+    return {
+      apiKey: '',
+      baseUrl: 'https://tramito.ai',
+      configPath,
+      configError: `TRAMITO_BASE_URL / baseUrl 缺少 http(s):// 前缀（收到：${JSON.stringify(baseUrl)}）`,
+    };
+  }
+  return { apiKey, baseUrl, configPath, configError };
 }
 
 function requireAuth(cfg) {
+  if (cfg.configError) {
+    fail(`配置文件无法使用（${cfg.configError}）：${cfg.configPath}。请修正为 {"apiKey": "tmt_live_...", "baseUrl": "https://tramito.ai"}`);
+  }
   if (!cfg.apiKey) {
     console.error(JSON.stringify({
       ok: false,
@@ -98,36 +118,101 @@ function parseArgs(args) {
   return { positionals, opts };
 }
 
+/* ────────────── 规范化与文件工具 ────────────── */
+
+/** 键排序的稳定序列化：同一语义内容的 key 顺序不同也得到同一字符串（幂等键/请求哈希的根基）。 */
+function canonicalJson(value) {
+  if (Array.isArray(value)) return `[${value.map(canonicalJson).join(',')}]`;
+  if (value && typeof value === 'object') {
+    const keys = Object.keys(value).sort();
+    return `{${keys.map((k) => `${JSON.stringify(k)}:${canonicalJson(value[k])}`).join(',')}}`;
+  }
+  return JSON.stringify(value);
+}
+
+/** 输出文件名净化：去控制字符/路径分隔符/空白折叠。 */
+function sanitizeName(raw) {
+  const cleaned = String(raw)
+    // eslint-disable-next-line no-control-regex
+    .replace(/[\x00-\x1f\x7f]/g, '')
+    .replace(/[\\/:*?"<>|]/g, '_')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return cleaned || 'diagram';
+}
+
+/** 由输入文件名推导默认输出名：foo.graph.json → foo（而不是 foo.graph）。 */
+function defaultNameFor(file) {
+  return sanitizeName(path.basename(file, path.extname(file)).replace(/\.graph$/i, ''));
+}
+
+/**
+ * B18 不静默覆盖：对一组 (dir, name, exts) 统一分配同一个版本后缀——
+ * 三件套必须同 stem，绝不能出现 foo.bpmn 配 foo-v2.graph.json 的错配。
+ */
+function nonClobberingFamily(dir, name, exts) {
+  for (let v = 1; ; v++) {
+    const stem = v === 1 ? name : `${name}-v${v}`;
+    const paths = exts.map((ext) => path.join(dir, `${stem}.${ext}`));
+    if (paths.every((p) => !fs.existsSync(p))) return paths;
+  }
+}
+
+/** 单文件写出：建父目录 + 不覆盖已有文件（自动 -v2）。 */
+function writeOut(file, data) {
+  const dir = path.dirname(file);
+  fs.mkdirSync(dir, { recursive: true });
+  const ext = path.extname(file);
+  const stem = path.basename(file, ext);
+  let target = file;
+  for (let v = 2; fs.existsSync(target); v++) target = path.join(dir, `${stem}-v${v}${ext}`);
+  fs.writeFileSync(target, data);
+  return target;
+}
+
 /* ────────────── HTTP ────────────── */
 
 const CLIENT_TIMEOUT_MS = 45_000; // 服务端转换上限 30s，客户端略长（覆盖到响应体读完）
+
+/** 网络层错误统一映射成 network_error（含 body 读取阶段的 abort）。 */
+function mapNetworkError(url, e) {
+  let origin = '';
+  try {
+    origin = new URL(url).origin;
+  } catch {
+    origin = url.slice(0, 60);
+  }
+  const err = new Error(`网络错误：无法连接 ${origin}（${e && e.name === 'AbortError' ? '请求超时' : (e && e.message) || e}）`);
+  err.code = 'network_error';
+  return err;
+}
 
 /** 带整体超时（含响应体读取）的 fetch。 */
 async function fetchWithTimeout(url, init = {}) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), CLIENT_TIMEOUT_MS);
+  let res;
   try {
-    const res = await fetch(url, { ...init, signal: controller.signal });
-    // 把超时覆盖到 body 读完：返回包装过的 text()
-    return {
-      ok: res.ok,
-      status: res.status,
-      statusText: res.statusText,
-      headers: res.headers,
-      text: async () => {
-        try {
-          return await res.text();
-        } finally {
-          clearTimeout(timer);
-        }
-      },
-    };
+    res = await fetch(url, { ...init, signal: controller.signal });
   } catch (e) {
     clearTimeout(timer);
-    const err = new Error(`网络错误：无法连接 ${new URL(url).origin}（${e.name === 'AbortError' ? '请求超时' : e.message}）`);
-    err.code = 'network_error';
-    throw err;
+    throw mapNetworkError(url, e);
   }
+  return {
+    ok: res.ok,
+    status: res.status,
+    statusText: res.statusText,
+    headers: res.headers,
+    text: async () => {
+      try {
+        return await res.text();
+      } catch (e) {
+        throw mapNetworkError(url, e);
+      } finally {
+        clearTimeout(timer);
+      }
+    },
+  };
 }
 
 async function api(cfg, method, urlPath, { body } = {}) {
@@ -149,8 +234,10 @@ async function api(cfg, method, urlPath, { body } = {}) {
     throw err;
   }
   if (!res.ok) {
+    // 服务端结构化 code 永远优先（504 render_timeout / 500 render_failed 等都要保住）
+    const serverCode = payload.error && typeof payload.error.code === 'string' ? payload.error.code : null;
     const err = new Error((payload.error && payload.error.message) || `${res.status} ${res.statusText}`);
-    err.code = res.status >= 500 ? 'http_5xx' : (payload.error && payload.error.code) || `http_${res.status}`;
+    err.code = serverCode || (res.status >= 500 ? 'http_5xx' : `http_${res.status}`);
     err.details = payload.error || {};
     err.status = res.status;
     throw err;
@@ -171,44 +258,18 @@ function readGraphFile(file) {
   return parsed;
 }
 
-/** 幂等键：graph 内容确定性哈希（同内容跨进程/跨重试同键 → 不重复扣次）。 */
-function idempotencyKeyFor(graph) {
-  return `cli-${createHash('sha256').update(JSON.stringify(graph)).digest('hex').slice(0, 32)}`;
-}
-
-/** 输出文件名净化：去控制字符/路径分隔符/空白折叠。 */
-function sanitizeName(raw) {
-  const cleaned = String(raw)
-    // eslint-disable-next-line no-control-regex
-    .replace(/[\x00-\x1f\x7f]/g, '')
-    .replace(/[\\/:*?"<>|]/g, '_')
-    .replace(/\s+/g, ' ')
-    .trim();
-  return cleaned || 'diagram';
-}
-
-/** B18：不静默覆盖。目标已存在时自动加 -v2/-v3… 后缀，返回实际可用路径。 */
-function nonClobberingPath(dir, name, ext) {
-  let candidate = path.join(dir, `${name}.${ext}`);
-  for (let v = 2; ; v++) {
-    if (!fs.existsSync(candidate)) return candidate;
-    candidate = path.join(dir, `${name}-v${v}.${ext}`);
-  }
-}
-
 async function cmdSpec(cfg, opts) {
   const payload = await api(cfg, 'GET', '/api/v1/bpmn/spec');
   const out = opts.get('--out');
   if (out) {
-    fs.writeFileSync(out, payload.spec, 'utf-8');
-    console.log(JSON.stringify({ ok: true, version: payload.version, limits: payload.limits, written: out }));
+    const written = writeOut(out, payload.spec);
+    console.log(JSON.stringify({ ok: true, version: payload.version, limits: payload.limits, written }));
   } else {
     console.log(JSON.stringify({ ok: true, version: payload.version, limits: payload.limits, spec: payload.spec }));
   }
 }
 
 async function cmdValidate(cfg, positionals) {
-  requireAuth(cfg);
   const graphFile = positionals[0];
   if (!graphFile) fail('用法：tramito.js validate <graph.json>');
   const graph = readGraphFile(graphFile);
@@ -217,23 +278,35 @@ async function cmdValidate(cfg, positionals) {
   process.exitCode = r.valid ? 0 : 1;
 }
 
-const MAX_POLLS = 20;
+/** 幂等键：规范化内容哈希（同语义内容跨进程/跨重试同键 → 不重复扣次）。 */
+function idempotencyKeyFor(canon) {
+  return `cli-${createHash('sha256').update(canon).digest('hex').slice(0, 32)}`;
+}
+
+const POLL_DEADLINE_MS = 5 * 60_000; // 服务端 30s 上限；轮询总预算 5 分钟兜底
 const TRANSIENT_POLL_ERRORS = new Set(['network_error', 'http_5xx', 'rate_limited', 'invalid_response']);
 
 /**
- * 轮询处理中的转换：瞬时错误（限速/网络/5xx）不中断——转换仍在服务端进行，
- * 中断会让用户丢掉一次已计数的转换。只记录并继续，轮询耗尽才失败。
+ * 轮询处理中的转换：瞬时错误（限速/网络/5xx/非 JSON）不中断——转换仍在服务端进行，
+ * 中断会让用户丢掉一次可能已计数的转换。预算 = 总时长 5 分钟（而非仅次数），
+ * 每轮等待尊重服务端最新指示的 retryAfterMs（钳制在 [1s, 10s]）。
  */
 async function pollUntilTerminal(cfg, id, retryAfterMs) {
   const warnings = [];
-  for (let i = 0; i < MAX_POLLS; i++) {
-    await new Promise((res) => setTimeout(res, Math.min(retryAfterMs || 2000, 10_000)));
+  const deadline = Date.now() + POLL_DEADLINE_MS;
+  let waitMs = Math.min(Math.max(retryAfterMs || 2000, 1000), 10_000);
+  let polls = 0;
+  while (Date.now() < deadline && polls < 20) {
+    await new Promise((res) => setTimeout(res, waitMs));
+    polls++;
     let r;
     try {
       r = await api(cfg, 'GET', `/api/v1/bpmn/renders/${id}`);
     } catch (e) {
-      if (TRANSIENT_POLL_ERRORS.has(e.code)) {
-        warnings.push(`第 ${i + 1} 次查询失败（${e.code}），已继续等待`);
+      if (TRANSIENT_POLL_ERRORS.has(String(e.code))) {
+        const hinted = e.details && typeof e.details.retryAfterMs === 'number' ? e.details.retryAfterMs : null;
+        if (hinted) waitMs = Math.min(Math.max(hinted, 1000), 10_000);
+        warnings.push(`第 ${polls} 次查询失败（${e.code}），已继续等待`);
         continue;
       }
       throw e;
@@ -244,24 +317,41 @@ async function pollUntilTerminal(cfg, id, retryAfterMs) {
 }
 
 async function cmdRender(cfg, positionals, opts) {
-  requireAuth(cfg);
   const graphFile = positionals[0];
   if (!graphFile) fail('用法：tramito.js render <graph.json> [--out DIR] [--name NAME]');
   const graph = readGraphFile(graphFile);
   const outDir = opts.get('--out') || '.';
-  const name = sanitizeName(opts.get('--name') || path.basename(graphFile, path.extname(graphFile)));
+  const name = sanitizeName(opts.get('--name') || defaultNameFor(graphFile));
 
-  const idempotencyKey = idempotencyKeyFor(graph);
-  let r = await api(cfg, 'POST', '/api/v1/bpmn/render', { body: { graph, idempotencyKey } });
+  // 规范化后再发送 + 哈希：键顺序重排的同一份图既是同一幂等键、也是同一请求哈希。
+  const canon = canonicalJson(graph);
+  const graphToSend = JSON.parse(canon);
+  const key = idempotencyKeyFor(canon);
 
-  let warnings = [];
+  let r;
+  try {
+    r = await api(cfg, 'POST', '/api/v1/bpmn/render', { body: { graph: graphToSend, idempotencyKey: key } });
+  } catch (e) {
+    if (e.code === 'network_error' || e.code === 'http_5xx' || e.code === 'invalid_response') {
+      // 瞬时失败原键重试一次（不会重复扣次）
+      r = await api(cfg, 'POST', '/api/v1/bpmn/render', { body: { graph: graphToSend, idempotencyKey: key } });
+    } else if (e.code === 'idempotency_window_expired') {
+      // 24h 窗口已过：加盐换新键重试一次（此刻即为一次新转换）
+      r = await api(cfg, 'POST', '/api/v1/bpmn/render', {
+        body: { graph: graphToSend, idempotencyKey: `${key}-r${randomUUID().slice(0, 8)}` },
+      });
+    } else {
+      throw e;
+    }
+  }
+
+  let pollWarnings = [];
   if (r.status === 'processing') {
     const polled = await pollUntilTerminal(cfg, r.id, r.retryAfterMs);
-    warnings = polled.warnings;
+    pollWarnings = polled.warnings;
     r = polled.r ?? { id: r.id, status: 'processing' };
   }
   if (r.status === 'failed') {
-    // 服务端终态失败：不计次，重试需要修正输入或稍后再试。
     console.error(JSON.stringify({
       ok: false,
       error: {
@@ -274,14 +364,14 @@ async function cmdRender(cfg, positionals, opts) {
     process.exit(1);
   }
   if (r.status !== 'succeeded' || !r.bpmn || !r.viewer || !r.artifacts) {
-    // 结构异常或仍在处理：把 id 带出去，用户可用 download 恢复（不再扣次）。
+    // 结构异常或仍在处理：把 id 带出去，用户可用 download/link 恢复（不再扣次）。
     console.error(JSON.stringify({
       ok: false,
       error: {
         code: r.status === 'processing' ? 'processing_timeout' : 'invalid_response',
         message:
           r.status === 'processing'
-            ? `转换仍在处理中（已轮询 ${MAX_POLLS} 次）。失败/超时不消耗额度；请稍后用 "tramito.js download ${r.id} bpmn" 恢复结果，不要立即重新 render。`
+            ? `转换仍在处理中（已轮询至 ${POLL_DEADLINE_MS / 60000} 分钟预算上限）。失败/超时不消耗额度；请稍后用 "tramito.js download ${r.id} bpmn" 或 "tramito.js link ${r.id}" 恢复，不要立即重新 render。`
             : `服务返回了不完整的转换结果。可用 "tramito.js download ${r.id} bpmn" 尝试恢复。`,
         id: r.id,
         status: r.status,
@@ -291,9 +381,7 @@ async function cmdRender(cfg, positionals, opts) {
   }
 
   fs.mkdirSync(outDir, { recursive: true });
-  const bpmnPath = nonClobberingPath(outDir, name, 'bpmn');
-  const graphPath = nonClobberingPath(outDir, name, 'graph.json');
-  const linkPath = nonClobberingPath(outDir, name, 'viewer.url.txt');
+  const [bpmnPath, graphPath, linkPath] = nonClobberingFamily(outDir, name, ['bpmn', 'graph.json', 'viewer.url.txt']);
   fs.writeFileSync(bpmnPath, r.bpmn, 'utf-8');
   fs.writeFileSync(graphPath, JSON.stringify(graph, null, 2), 'utf-8');
   // 链接落盘：长随机 token 让 Agent「凭记忆转述」极易抄错一个字符——交付时引用本文件原文。
@@ -306,46 +394,52 @@ async function cmdRender(cfg, positionals, opts) {
     viewerUrl: r.viewer.url, // 浏览器打开即可看图并导出 PNG（&embed=1 为无界面嵌入版）
     viewerExpiresAt: r.viewer.expiresAt,
     expiresAt: r.expiresAt,
-    warnings,
+    warnings: [...(Array.isArray(r.warnings) ? r.warnings : []), ...pollWarnings],
     usage: r.usage,
   }, null, 2));
 }
 
-async function cmdLink(cfg, positionals) {
-  requireAuth(cfg);
-  const id = positionals[0];
-  if (!id) fail('用法：tramito.js link <renderId>');
-  const r = await api(cfg, 'GET', `/api/v1/bpmn/renders/${id}`);
-  if (r.status !== 'succeeded' || !r.viewer) {
-    fail(`该转换当前没有可用的查看器链接（status=${r.status ?? 'unknown'}；产物过期需重新转换会计次）`);
-  }
-  console.log(JSON.stringify({ ok: true, id: r.id, viewerUrl: r.viewer.url, expiresAt: r.viewer.expiresAt }));
-}
-
 async function cmdUsage(cfg) {
-  requireAuth(cfg);
   const r = await api(cfg, 'GET', '/api/v1/usage');
   console.log(JSON.stringify({ ok: true, ...r }, null, 2));
 }
 
+async function cmdLink(cfg, positionals) {
+  const id = positionals[0];
+  if (!id) fail('用法：tramito.js link <renderId>');
+  const r = await api(cfg, 'GET', `/api/v1/bpmn/renders/${id}`);
+  if (r.status !== 'succeeded' || !r.viewer) {
+    fail(`该转换当前没有可用的查看器链接（status=${r.status ?? 'unknown'}${r.status === 'failed' ? `，${r.errorCode ?? ''}` : ''}；产物过期需重新转换会计次）`);
+  }
+  console.log(JSON.stringify({ ok: true, id: r.id, viewerUrl: r.viewer.url, expiresAt: r.viewer.expiresAt }));
+}
+
 async function cmdDownload(cfg, positionals, opts) {
-  requireAuth(cfg);
   const [id, kind] = positionals;
   if (kind === 'png') fail('PNG 不由服务端提供；请在查看器链接（viewerUrl）中一键导出 PNG（浏览器端完成）。');
   if (!id || kind !== 'bpmn') fail('用法：tramito.js download <renderId> bpmn [--out FILE]');
   const r = await api(cfg, 'GET', `/api/v1/bpmn/renders/${id}`);
   if (r.status !== 'succeeded' || !r.artifacts || !r.artifacts.bpmn) {
-    fail(`该转换当前不可下载（status=${r.status ?? 'unknown'}）`);
+    fail(`该转换当前不可下载（status=${r.status ?? 'unknown'}${r.status === 'failed' ? `，${r.errorCode ?? ''}；失败不计次，修正后可重新 render` : ''}）`);
   }
   const res = await fetchWithTimeout(r.artifacts.bpmn.url);
   if (!res.ok) {
-    const err = new Error(`产物下载失败（HTTP ${res.status}）`);
-    err.code = res.status === 410 ? 'artifact_expired' : 'download_failed';
+    // 读服务端结构化错误（artifact_unavailable / invalid_download_token 等），不要塌缩成 download_failed
+    const text = await res.text().catch(() => '');
+    let serverCode = null;
+    let serverMsg = null;
+    try {
+      const p = JSON.parse(text);
+      serverCode = p.error && p.error.code;
+      serverMsg = p.error && p.error.message;
+    } catch { /* 非 JSON 体 */ }
+    const err = new Error(serverMsg || `产物下载失败（HTTP ${res.status}）`);
+    err.code = serverCode || (res.status === 410 ? 'artifact_expired' : 'download_failed');
     throw err;
   }
   const out = opts.get('--out') || `tramito-${id.slice(0, 8)}.bpmn`;
-  fs.writeFileSync(out, await res.text(), 'utf-8');
-  console.log(JSON.stringify({ ok: true, written: out }));
+  const written = writeOut(out, await res.text());
+  console.log(JSON.stringify({ ok: true, written }));
 }
 
 /* ────────────── 入口 ────────────── */
@@ -355,26 +449,32 @@ function fail(message) {
   process.exit(2);
 }
 
+const COMMANDS = new Set(['spec', 'validate', 'render', 'usage', 'download', 'link']);
+
 async function main() {
   const [cmd, ...rest] = process.argv.slice(2);
+  // 未知命令的报错优先于本地配置问题（用户第一个要改的是命令本身）
+  if (!cmd || !COMMANDS.has(cmd)) {
+    fail(`未知命令：${cmd || '(空)'}。可用：${[...COMMANDS].join(' | ')}`);
+  }
+  const { positionals, opts } = parseArgs(rest);
   try {
-    const cfg = loadConfig(); // 任何配置问题在这里已被 fail() 结构化处理
-    const { positionals, opts } = parseArgs(rest);
+    const cfg = loadConfig();
+    // spec 是公开端点：配置坏了也能跑（configError 时 baseUrl 已回落默认值）
+    if (cmd === 'spec') return await cmdSpec(cfg, opts);
+    requireAuth(cfg);
     switch (cmd) {
-      case 'spec': return await cmdSpec(cfg, opts);
       case 'validate': return await cmdValidate(cfg, positionals);
       case 'render': return await cmdRender(cfg, positionals, opts);
       case 'usage': return await cmdUsage(cfg);
       case 'download': return await cmdDownload(cfg, positionals, opts);
       case 'link': return await cmdLink(cfg, positionals);
-      default:
-        fail(`未知命令：${cmd || '(空)'}。可用：spec | validate | render | usage | download | link`);
     }
   } catch (e) {
     console.error(JSON.stringify({
       ok: false,
       error: {
-        code: e.code || 'request_failed',
+        code: String(e.code || 'request_failed'),
         message: e.message,
         ...(e.details && Object.keys(e.details).length > 1 ? { server: e.details } : {}),
       },

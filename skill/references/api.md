@@ -25,7 +25,7 @@ Base URL：用户配置的 `TRAMITO_BASE_URL`（默认 `https://tramito.ai`）�
 }
 ```
 
-- `idempotencyKey`：同一组织内 24 小时窗口，**相同键 + 相同内容** → 返回同一结果、只计 1 次；处理中重试不启动第二份转换；相同键 + 不同内容 → `409 idempotency_conflict`；窗口过期后 → `409 idempotency_window_expired`（换新键重新转换会计次）。
+- `idempotencyKey`：同一组织内 24 小时窗口，**相同键 + 相同内容** → 返回同一结果、只计 1 次；处理中重试不启动第二份转换；相同键 + 不同内容 → `409 idempotency_conflict`；窗口过期后 → `409 idempotency_window_expired`（换新键重新转换会计次；官方 CLI 对内容做键排序规范化后哈希成键，并在窗口过期时自动加盐换键重试一次）。「相同内容」按服务端收到的字节判定——若自行构造请求，请同样做键排序稳定序列化。
 
 成功响应（200）：
 
