@@ -1,0 +1,66 @@
+name: build
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Static checks
+        run: |
+          node --check skill/scripts/tramito.js
+          bash -n package.sh
+
+      - name: SKILL.md frontmatter sanity
+        run: |
+          grep -q '^name: tramito-bpmn-assistant' skill/SKILL.md
+          grep -q '^version: ' skill/SKILL.md
+          grep -q '^description: ' skill/SKILL.md
+          grep -q '^description_zh: ' skill/SKILL.md
+          grep -q '^description_en: ' skill/SKILL.md
+          grep -q '^author: ' skill/SKILL.md
+
+      # 打包本身含凭证泄漏守卫（tmt_live_ 长串即失败）
+      - name: Package skill zip
+        run: ./package.sh
+
+      - name: Verify zip layout（SKILL.md 必须在根目录，且无缺省文件）
+        run: |
+          unzip -l dist/tramito-bpmn-assistant.zip | grep -qE ' SKILL\.md$'
+          ! unzip -l dist/tramito-bpmn-assistant.zip | grep -q 'skill/SKILL.md'
+          unzip -p dist/tramito-bpmn-assistant.zip SKILL.md | head -1 | grep -q '^---$'
+          unzip -l dist/tramito-bpmn-assistant.zip | grep -q 'references/graph-spec.md'
+          unzip -l dist/tramito-bpmn-assistant.zip | grep -q 'scripts/tramito.js'
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tramito-bpmn-assistant
+          path: dist/tramito-bpmn-assistant.zip
+          retention-days: 30
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: tramito-bpmn-assistant
+          path: dist
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release create "${GITHUB_REF_NAME}" dist/tramito-bpmn-assistant.zip --title "${GITHUB_REF_NAME}" --generate-notes

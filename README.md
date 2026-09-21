@@ -1,8 +1,12 @@
 # Tramito BPMN Assistant · Public Skill / Plugin
 
+[![build](https://github.com/LcpMarvel/tramito-skill/actions/workflows/build.yml/badge.svg)](https://github.com/LcpMarvel/tramito-skill/actions/workflows/build.yml)
+
 English · [简体中文](README.zh-CN.md)
 
 Official site: **<https://tramito.ai>**
+
+Download the ready-made skill zip: **[Releases](https://github.com/LcpMarvel/tramito-skill/releases)**
 
 A publicly installable skill that turns business descriptions into **standard BPMN 2.0 files (.bpmn) plus an online viewer link**. The host agent handles understanding, modeling, fixing and delivery; the Tramito server handles validation, layout and file generation; diagrams render in the browser via bpmn-js with one-click PNG export — no JSON/XML/layout knowledge required.
 
@@ -37,7 +41,7 @@ Requires **Node.js ≥ 18 or Bun** and outbound HTTPS (default `https://tramito.
 
 ### WorkBuddy (tested)
 
-Package and upload: `./package.sh` produces `dist/tramito-bpmn-assistant.zip` → Skills marketplace → Add skill → upload. Install and usage verified in the WorkBuddy host (2026-09). Details in [`docs/workbuddy.md`](docs/workbuddy.md).
+Download `tramito-bpmn-assistant.zip` from [Releases](https://github.com/LcpMarvel/tramito-skill/releases) (or build it yourself with `./package.sh`) → Skills marketplace → Add skill → upload. Install and usage verified in the WorkBuddy host (2026-09). Details in [`docs/workbuddy.md`](docs/workbuddy.md).
 
 ### Configure credentials (required — no shared key is bundled)
 

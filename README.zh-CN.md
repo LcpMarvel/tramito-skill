@@ -1,8 +1,12 @@
 # Tramito 流程图助手 · 公开技能 / 插件
 
+[![build](https://github.com/LcpMarvel/tramito-skill/actions/workflows/build.yml/badge.svg)](https://github.com/LcpMarvel/tramito-skill/actions/workflows/build.yml)
+
 [English](README.md) · 简体中文
 
 官网：**<https://tramito.ai>**
+
+现成的技能 zip 下载：**[Releases](https://github.com/LcpMarvel/tramito-skill/releases)**
 
 把业务描述变成**标准 BPMN 2.0 文件（.bpmn）+ 在线查看器链接**的可公开安装技能。宿主 Agent 负责理解、建模、修复与交付；Tramito 服务器负责校验、排版与文件生成；图在浏览器里用 bpmn-js 真实渲染，可一键导出 PNG——你不需要懂 JSON、XML 或布局参数。
 
@@ -37,7 +41,7 @@ cp -R skill ~/.claude/skills/tramito-bpmn-assistant
 
 ### WorkBuddy（已实测）
 
-打包并上传：`./package.sh` 产出 `dist/tramito-bpmn-assistant.zip` → 技能市场 →【添加技能】上传。安装与使用已在 WorkBuddy 宿主内实测通过（2026-09）。细节见 [`docs/workbuddy.md`](docs/workbuddy.md)。
+下载 [Releases](https://github.com/LcpMarvel/tramito-skill/releases) 里的 `tramito-bpmn-assistant.zip`（或自己 `./package.sh` 打包）→ 技能市场 →【添加技能】上传。安装与使用已在 WorkBuddy 宿主内实测通过（2026-09）。细节见 [`docs/workbuddy.md`](docs/workbuddy.md)。
 
 ### 配置凭证（必做，技能不内置任何共享 Key）
 
