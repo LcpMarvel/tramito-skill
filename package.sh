@@ -25,9 +25,8 @@ if [ -n "$leaks" ]; then
   exit 1
 fi
 
-# 依赖（node_modules）、安装锁、本地 lock 与更新时间戳不进包：用户侧首次运行时
-# CLI 自动安装 tramito-layout@latest 并每日后台跟随最新版（见 scripts/tramito.mjs）。
-# package.json 必须进包——它是手动安装回退路径的输入。
+# 自包含分发：内核 bundle（scripts/engine.mjs）随包发布，运行时无 npm / 无网络。
+# node_modules 等本地开发残留不进包（防御性排除）。
 (cd skill && zip -r "../$OUT" . -x '*.DS_Store' -x '__MACOSX/*' -x 'node_modules/*' -x '.install-lock/*' -x '.update-check.json' -x 'package-lock.json')
 echo "✓ $OUT"
 unzip -l "$OUT" | tail -3

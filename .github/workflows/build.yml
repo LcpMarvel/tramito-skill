@@ -30,13 +30,9 @@ jobs:
           grep -q '^description_en: ' skill/SKILL.md
           grep -q '^author: ' skill/SKILL.md
 
-      # v2：排版内核是 npm 依赖（tramito-layout），CI 按用户侧同样的方式装好再测。
-      # 显式 @latest：skill 永远跟随最新版——布局输出变化会先在这里红起来（金丝雀）。
-      - name: Install skill deps (latest)
-        working-directory: skill
-        run: npm install tramito-layout@latest --omit=dev --no-audit --no-fund
-
-      - name: Smoke — doctor / validate / render
+      # v2.1 起自包含：内核打包在 skill/scripts/engine.mjs，测试不需要 npm install——
+      # 这一步本身就是「沙箱宿主（无 node_modules、无网络）能跑」的证明。
+      - name: Smoke — doctor / validate / render (no npm, no network deps)
         run: |
           node skill/scripts/tramito.mjs doctor | grep -q '"ok": true'
           node skill/scripts/tramito.mjs validate examples/expense-approval/expense-approval.graph.json | grep -q '"valid": true'
@@ -45,30 +41,50 @@ jobs:
           grep -q '<bpmn:definitions' /tmp/smoke/smoke.bpmn
 
       # 布局输出确定性已验证（同输入字节级一致）：重渲染必须与仓库内基线零 diff。
-      # CI 装 @latest，所以这里同时是「跟随最新」的金丝雀：新版本改了排版就红，
-      # 处理方式 = 人工确认新版输出后重新生成基线（改 examples/*.bpmn 提交）。
+      # 内核版本随技能发布锁定——基线与打包内核必须一致。
       - name: Regression — re-rendered examples must match committed .bpmn
         run: |
           set -e
           for ex in expense-approval order-fulfillment employee-onboarding procurement; do
             node skill/scripts/tramito.mjs render "examples/$ex/$ex.graph.json" --out /tmp/rerender --name "$ex" >/dev/null
             diff "/tmp/rerender/$ex.bpmn" "examples/$ex/$ex.bpmn" || {
-              echo "✗ $ex.bpmn 与最新 tramito-layout 输出不一致——新版改了排版行为。确认输出无误后重新生成基线并提交。" >&2
+              echo "✗ $ex.bpmn 与打包内核输出不一致——内核升级后未重新生成基线？" >&2
               exit 1
             }
           done
+
+      # 防漂移：按提交在案 engine.mjs 里的 ENGINE_VERSION 重建 bundle，必须与提交文件零 diff。
+      # （不用 @latest 重建——内核随技能发布锁定，latest 只在下一步作提示。）
+      - name: Bundle drift — rebuild engine.mjs from pinned version
+        run: |
+          VER=$(grep -o 'ENGINE_VERSION = "[^"]*"' skill/scripts/engine.mjs | head -1 | cut -d'"' -f2)
+          echo "committed engine version: $VER"
+          node tools/build-engine.mjs "$VER"
+          git diff --exit-code -- skill/scripts/engine.mjs || {
+            echo '✗ skill/scripts/engine.mjs 与构建脚本输出不一致——请用 tools/build-engine.mjs 重新生成并提交。' >&2
+            exit 1
+          }
+
+      # 提示性（不阻断）：npm 上已有更新版本的 tramito-layout 时提醒重新打包。
+      - name: Engine freshness (advisory)
+        run: |
+          VER=$(grep -o 'ENGINE_VERSION = "[^"]*"' skill/scripts/engine.mjs | head -1 | cut -d'"' -f2)
+          LATEST=$(npm view tramito-layout version)
+          echo "bundled: $VER / npm latest: $LATEST"
+          [ "$VER" = "$LATEST" ] || echo "::warning::tramito-layout $LATEST is available (bundled: $VER) — re-run tools/build-engine.mjs and cut a new skill release."
 
       # 打包本身含凭证泄漏守卫（tmt_live_ 长串即失败）；依赖不进包，用户侧首次运行自动安装
       - name: Package skill zip
         run: ./package.sh
 
-      - name: Verify zip layout（SKILL.md 必须在根目录；package.json 进包，node_modules/lock 不进）
+      - name: Verify zip layout（SKILL.md 必须在根目录；engine bundle 必须进包）
         run: |
           unzip -l dist/tramito-bpmn-assistant.zip | grep -qE ' SKILL\.md$'
           ! unzip -l dist/tramito-bpmn-assistant.zip | grep -q 'skill/SKILL.md'
           unzip -p dist/tramito-bpmn-assistant.zip SKILL.md | head -1 | grep -q '^---$'
           unzip -l dist/tramito-bpmn-assistant.zip | grep -q 'references/graph-spec.md'
           unzip -l dist/tramito-bpmn-assistant.zip | grep -q 'scripts/tramito.mjs'
+          unzip -l dist/tramito-bpmn-assistant.zip | grep -q 'scripts/engine.mjs'
           unzip -l dist/tramito-bpmn-assistant.zip | grep -qE ' package\.json$'
           ! unzip -l dist/tramito-bpmn-assistant.zip | grep -q 'node_modules'
           ! unzip -l dist/tramito-bpmn-assistant.zip | grep -q 'package-lock'

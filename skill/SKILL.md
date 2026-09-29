@@ -1,7 +1,7 @@
 ---
 name: tramito-bpmn-assistant
-version: 2.0.0
-description: Process diagram assistant — turn business descriptions into standard BPMN 2.0 files (.bpmn), fully local, no account needed. Trigger words: flowchart, BPMN, business process, approval flow, swimlane diagram, process diagram
+version: 2.1.0
+description: Process diagram assistant — turn business descriptions into standard BPMN 2.0 files (.bpmn), fully local and offline, no account needed. Trigger words: flowchart, BPMN, business process, approval flow, swimlane diagram, process diagram
 description_zh: Tramito 流程图助手——描述业务流程，得到标准 BPMN 2.0 文件；校验与排版内核为开源库 tramito-layout，全程本地、无需账号
 description_en: Process diagram assistant — turn business descriptions into standard BPMN 2.0 files (.bpmn), fully local, no account needed. Powered by the open-source tramito-layout engine.
 display_name: Tramito BPMN Assistant
@@ -15,7 +15,7 @@ allowed-tools: Bash, Read, Write, Edit, Glob
 
 You (the host agent) understand the business, model it, fix it and deliver it; the local compiler **tramito-layout** (an npm package) handles validation, layout and BPMN XML generation. You **do not write BPMN XML or compute coordinates** — you only produce flat JSON process data and let the compiler do the rest.
 
-- **Fully local**: no account, no API key, no quota — validate and convert as often as you like. **Process data never leaves the machine**; the only network traffic is the dependency install/update check against the npm registry (silent, skipped offline).
+- **Fully local and offline**: no account, no API key, no quota, no network of any kind — validate and convert as often as you like. **Process data never leaves the machine**. The tramito-layout engine is bundled inside the skill, so nothing is installed or downloaded at runtime (sandbox-friendly).
 - Tool script: `scripts/tramito.mjs` (Node ≥20 or Bun). The path is relative to **this skill directory** (e.g. `.claude/skills/tramito-bpmn-assistant/scripts/tramito.mjs`) — use whatever path you can actually resolve.
 - Input spec: `@references/graph-spec.md` (kept in sync with tramito-layout's validator)
 - Four ready-to-copy business examples: `@references/scenarios.md`
@@ -24,12 +24,11 @@ You (the host agent) understand the business, model it, fix it and deliver it; t
 
 ## Step 0: Environment (only act when something breaks)
 
-On the first run of `validate` / `render` / `doctor` the CLI installs its dependencies automatically (tramito-layout@latest; needs network once, takes under a minute). The engine then **follows the latest tramito-layout release automatically**: a silent background check runs at most once a day and skips itself when offline — layout updates reach the user without re-installing the skill. `node scripts/tramito.mjs update` syncs immediately; `node scripts/tramito.mjs doctor` checks the environment. Normally you **do not need to do anything** — start at Step 1.
+The skill is **self-contained** — the engine is bundled in `scripts/engine.mjs`, nothing installs or downloads at runtime. The only requirement is a JavaScript runtime. Normally you **do not need to do anything** — start at Step 1.
 
-- `cli_error` mentioning a failed dependency install → relay the manual command from stderr to the user (usually `cd <skill dir> && npm install tramito-layout@latest --omit=dev`); in offline/proxied environments make sure npm works first (`TRAMITO_REGISTRY=<mirror url>` points both check and install at a mirror).
 - "Runtime too old" error → the user needs Node.js ≥ 20 or Bun ≥ 1.3.
-- A read-only skill directory → have the user move the skill somewhere writable, or run the install command above manually inside the skill directory.
-- A user who wants to pin/disable updates → `TRAMITO_NO_AUTO_UPDATE=1` disables the background check (manual `update` still works).
+- Unsure about the environment → run `node scripts/tramito.mjs doctor` (checks the runtime, reports the bundled engine version, and compiles a smoke diagram in one shot).
+- A `cli_error` about a missing/corrupt `engine.mjs` → the skill installation is broken; re-install the skill zip.
 
 ## Step 1: Understand the request, clarify selectively
 
