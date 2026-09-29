@@ -1,6 +1,6 @@
 ---
 name: tramito-bpmn-assistant
-version: 2.2.1
+version: 2.3.0
 description: Process diagram assistant — turn business descriptions into standard BPMN 2.0 files (.bpmn), fully local and offline, no account needed. Trigger words: BPMN, business process, process diagram, workflow diagram, approval flow, swimlane diagram, 流程图, 业务流程, 审批流程, 泳道图
 description_zh: Tramito 流程图助手——描述业务流程，得到标准 BPMN 2.0 文件；校验与排版内核为开源库 tramito-layout，全程本地、无需账号
 description_en: Process diagram assistant — turn business descriptions into standard BPMN 2.0 files (.bpmn), fully local and offline, no account needed. Trigger words: BPMN, business process, process diagram, workflow diagram, approval flow, swimlane diagram.
@@ -24,11 +24,16 @@ You (the host agent) understand the business, model it, fix it and deliver it; t
 
 ## Step 0: Environment (only act when something breaks)
 
-The skill is **self-contained** — the engine is bundled in `scripts/engine.mjs`, nothing installs or downloads at runtime. The only requirement is a JavaScript runtime. Normally you **do not need to do anything** — start at Step 1.
+The skill ships in two flavors and the CLI auto-detects which one it is running:
+
+- **Bundled flavor** (e.g. the OpenAI plugin): the engine is bundled in `scripts/engine.mjs` — fully offline, nothing is ever installed or downloaded.
+- **npm flavor** (e.g. the WorkBuddy zip): on the first `validate` / `render` / `doctor` the CLI installs the layout engine automatically (`npm install`, per `package.json`; needs network once, under a minute), then runs offline.
+
+Normally you **do not need to do anything** — start at Step 1.
 
 - "Runtime too old" error → the user needs Node.js ≥ 20 or Bun ≥ 1.3.
-- Unsure about the environment → run `node scripts/tramito.mjs doctor` (checks the runtime, reports the bundled engine version, and compiles a smoke diagram in one shot).
-- A `cli_error` about a missing/corrupt `engine.mjs` → the skill installation is broken; re-install the skill zip.
+- A `cli_error` about a failed engine install (npm flavor) → relay the manual command from stderr to the user (usually `cd <skill dir> && npm install --omit=dev`); in offline/proxied environments make sure npm works first.
+- Unsure about the environment → run `node scripts/tramito.mjs doctor` (checks the runtime, reports the engine flavor/version, and compiles a smoke diagram in one shot).
 
 ## Step 1: Understand the request, clarify selectively
 

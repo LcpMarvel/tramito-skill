@@ -39,7 +39,7 @@ cp -R skill ~/.claude/skills/tramito-bpmn-assistant
 
 ### WorkBuddy (tested)
 
-Download `tramito-bpmn-assistant.zip` from [Releases](https://github.com/LcpMarvel/tramito-skill/releases) (or build it yourself with `./package.sh`) → Skills marketplace → Add skill → upload. Install and usage verified in the WorkBuddy host. Details in [`docs/workbuddy.md`](docs/workbuddy.md).
+Download `tramito-bpmn-assistant.zip` from [Releases](https://github.com/LcpMarvel/tramito-skill/releases) (or build it yourself with `./package.sh`) → Skills marketplace → Add skill → upload. This is the **slim flavor** (KB-sized, within WorkBuddy's 1.5 MB limit): the layout engine is **not** in the zip — on the first run the CLI installs it automatically via npm (per `package.json`, one-time network access). Install and usage verified in the WorkBuddy host. Details in [`docs/workbuddy.md`](docs/workbuddy.md).
 
 ### OpenAI (ChatGPT / Codex) — Skills-only plugin
 
@@ -50,11 +50,13 @@ The same skill ships as an OpenAI plugin: download **`tramito-bpmn-assistant-ope
 skills/tramito-bpmn-assistant/  # the skill itself (bundled engine included)
 ```
 
-It is fully self-contained: no runtime `npm install`, no network access, no account — which is exactly what sandboxed plugin hosts require. Submit it in the OpenAI Plugin Submission Portal as **Create plugin → Skills only** (do not choose an MCP variant). Building the zip yourself: `./package-openai.sh` (includes version-sync, credential/local-path guards, a staging smoke test, and a post-zip verification that runs `doctor` from the unzipped environment).
+This is the **bundled flavor** (≈1.3 MB zip, engine inside): no runtime `npm install`, no network access, no account — exactly what sandboxed plugin hosts require. Submit it in the OpenAI Plugin Submission Portal as **Create plugin → Skills only** (do not choose an MCP variant). Building the zip yourself: `./package-openai.sh` (includes version-sync, credential/local-path guards, a staging smoke test, and a post-zip verification that runs `doctor` from the unzipped environment).
 
 ### Requirements
 
-- **Node.js ≥ 20 or Bun ≥ 1.3** — and nothing else. No npm, no network, no writable requirements: the engine is bundled inside the skill (`scripts/engine.mjs`), so the CLI works in fully sandboxed environments.
+- **Node.js ≥ 20 or Bun ≥ 1.3**.
+- **Bundled flavor** (OpenAI zip): nothing else — no npm, no network, no writable requirements; works in fully sandboxed environments.
+- **Slim flavor** (WorkBuddy zip): npm network access on first run — the CLI installs the layout engine automatically (one time, a few seconds), then runs offline. Manual fallback: `cd <skill dir> && npm install --omit=dev`.
 - No account, no credentials, no configuration files.
 
 ## How it works
@@ -62,7 +64,7 @@ It is fully self-contained: no runtime `npm install`, no network access, no acco
 - The agent models the process as **flat ELK-BPMN JSON** (pools / lanes / nodes / edges — no coordinates, no nesting), then runs the bundled CLI: `validate` → fix per issue hints → `render`.
 - [tramito-layout](https://github.com/LcpMarvel/tramito-layout) is a compiler: `validateFlat()` is the front end (clear, fixable diagnostics), ELK placement + a custom edge router + serializer are the back end. Output is byte-for-byte deterministic — the same graph always compiles to the same XML.
 - `render` writes `<name>.bpmn` + `<name>.graph.json` (the editable source). Existing files are never overwritten (`-v2`/`-v3` suffixes).
-- The engine is **bundled and pinned per skill release** (`tools/build-engine.mjs` regenerates it). New tramito-layout releases are picked up by re-bundling and cutting a new skill version; CI rebuilds the bundle and diffs it against the committed file, and warns when a newer npm release exists.
+- **Two distribution flavors, one CLI**: the OpenAI zip carries the engine bundled (`scripts/engine.mjs`, pinned per release via `tools/build-engine.mjs`); the WorkBuddy zip stays KB-sized and installs the engine from npm on first run (spec pinned in `package.json`, e.g. `~2.8.1`). The CLI auto-detects which flavor it is running.
 
 ## Documentation
 

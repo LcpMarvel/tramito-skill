@@ -32,13 +32,22 @@ jobs:
 
       # v2.1 起自包含：内核打包在 skill/scripts/engine.mjs，测试不需要 npm install——
       # 这一步本身就是「沙箱宿主（无 node_modules、无网络）能跑」的证明。
-      - name: Smoke — doctor / validate / render (no npm, no network deps)
+      - name: Smoke — doctor / validate / render (bundled flavor, no npm, no network deps)
         run: |
           node skill/scripts/tramito.mjs doctor | grep -q '"ok": true'
           node skill/scripts/tramito.mjs validate examples/expense-approval/expense-approval.graph.json | grep -q '"valid": true'
           node skill/scripts/tramito.mjs render examples/expense-approval/expense-approval.graph.json --out /tmp/smoke --name smoke >/dev/null
           head -c 200 /tmp/smoke/smoke.bpmn | grep -q '<?xml'
           grep -q '<bpmn:definitions' /tmp/smoke/smoke.bpmn
+
+      # 瘦身版（WorkBuddy）走 npm 自举：去掉 engine.mjs 模拟其 zip 安装后的首次运行
+      - name: Smoke — slim flavor (npm bootstrap, engine.mjs removed)
+        run: |
+          rm -rf /tmp/slim && cp -R skill /tmp/slim && rm -f /tmp/slim/scripts/engine.mjs
+          rm -rf /tmp/slim/node_modules
+          node /tmp/slim/scripts/tramito.mjs doctor | grep -q '"ok": true'
+          node /tmp/slim/scripts/tramito.mjs render examples/expense-approval/expense-approval.graph.json --out /tmp/slim-out --name slim >/dev/null
+          grep -q '<bpmn:definitions' /tmp/slim-out/slim.bpmn
 
       # 布局输出确定性已验证（同输入字节级一致）：重渲染必须与仓库内基线零 diff。
       # 内核版本随技能发布锁定——基线与打包内核必须一致。
@@ -78,7 +87,9 @@ jobs:
         run: node test/run-tests.mjs
 
       # 打包本身含凭证泄漏守卫（tmt_live_ 长串即失败）；依赖不进包，用户侧首次运行自动安装
-      - name: Package skill zip (WorkBuddy / generic)
+      # WorkBuddy 瘦身版：不带 engine.mjs（zip KB 级，宿主限 1.5MB），首跑 npm 自举；
+      # 脚本内置体积守卫与凭证泄漏守卫
+      - name: Package skill zip (WorkBuddy / slim)
         run: ./package.sh
 
       # OpenAI Skills-only Plugin（.codex-plugin/ + skills/ 布局）；
@@ -86,17 +97,18 @@ jobs:
       - name: Package OpenAI plugin zip
         run: ./package-openai.sh
 
-      - name: Verify zip layout（SKILL.md 必须在根目录；engine bundle 必须进包）
+      - name: Verify zip layout（SKILL.md 在根目录；WorkBuddy 版不含 engine.mjs，OpenAI 版必须含）
         run: |
           unzip -l dist/tramito-bpmn-assistant.zip | grep -qE ' SKILL\.md$'
           ! unzip -l dist/tramito-bpmn-assistant.zip | grep -q 'skill/SKILL.md'
           unzip -p dist/tramito-bpmn-assistant.zip SKILL.md | head -1 | grep -q '^---$'
           unzip -l dist/tramito-bpmn-assistant.zip | grep -q 'references/graph-spec.md'
           unzip -l dist/tramito-bpmn-assistant.zip | grep -q 'scripts/tramito.mjs'
-          unzip -l dist/tramito-bpmn-assistant.zip | grep -q 'scripts/engine.mjs'
           unzip -l dist/tramito-bpmn-assistant.zip | grep -qE ' package\.json$'
+          ! unzip -l dist/tramito-bpmn-assistant.zip | grep -q 'scripts/engine.mjs'
           ! unzip -l dist/tramito-bpmn-assistant.zip | grep -q 'node_modules'
           ! unzip -l dist/tramito-bpmn-assistant.zip | grep -q 'package-lock'
+          unzip -l dist/tramito-bpmn-assistant-openai.zip | grep -q 'scripts/engine.mjs'
 
       - uses: actions/upload-artifact@v7
         with:

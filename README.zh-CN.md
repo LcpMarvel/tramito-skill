@@ -39,7 +39,7 @@ cp -R skill ~/.claude/skills/tramito-bpmn-assistant
 
 ### WorkBuddy（已实测）
 
-从 [Releases](https://github.com/LcpMarvel/tramito-skill/releases) 下载 `tramito-bpmn-assistant.zip`（或自己跑 `./package.sh` 打包）→ 技能市场 → 添加技能 → 上传。已在 WorkBuddy 宿主内完成安装与使用实测，详见 [`docs/workbuddy.md`](docs/workbuddy.md)。
+从 [Releases](https://github.com/LcpMarvel/tramito-skill/releases) 下载 `tramito-bpmn-assistant.zip`（或自己跑 `./package.sh` 打包）→ 技能市场 → 添加技能 → 上传。这是**瘦身版**（KB 级体积，满足 WorkBuddy 1.5MB 上限）：排版内核不进 zip，首次运行时 CLI 自动经 npm 安装（按 `package.json` 规格，需联网一次）。已在 WorkBuddy 宿主内完成安装与使用实测，详见 [`docs/workbuddy.md`](docs/workbuddy.md)。
 
 ### OpenAI（ChatGPT / Codex）——Skills-only 插件
 
@@ -50,11 +50,13 @@ cp -R skill ~/.claude/skills/tramito-bpmn-assistant
 skills/tramito-bpmn-assistant/  # 技能本体（含打包内核）
 ```
 
-完全自包含：运行时不 `npm install`、不联网、无账号——正是沙箱插件宿主要求的形态。在 OpenAI Plugin Submission Portal 里走 **Create plugin → Skills only** 提交（不要选 MCP 形态）。自行打包时 `./package-openai.sh` 会做版本一致性、凭证/本机路径守卫、staging 冒烟，以及解压回验（在解压环境里再跑一次 doctor）。
+这是**打包版**（zip 约 1.3MB，内核随包）：运行时不 `npm install`、不联网、无账号——正是沙箱插件宿主要求的形态。在 OpenAI Plugin Submission Portal 里走 **Create plugin → Skills only** 提交（不要选 MCP 形态）。自行打包时 `./package-openai.sh` 会做版本一致性、凭证/本机路径守卫、staging 冒烟，以及解压回验（在解压环境里再跑一次 doctor）。
 
 ### 运行前提
 
-- **Node.js ≥ 20 或 Bun ≥ 1.3**——仅此而已。不需要 npm、不需要联网、不要求目录可写：排版内核已打包在技能内（`scripts/engine.mjs`），完全沙箱环境也能用。
+- **Node.js ≥ 20 或 Bun ≥ 1.3**。
+- **打包版**（OpenAI zip）：仅此而已——不需要 npm、不联网、不要求目录可写，完全沙箱环境可用。
+- **瘦身版**（WorkBuddy zip）：首次运行需 npm 联网一次——CLI 自动安装排版内核（几秒钟），之后全程离线。手动回退：`cd <技能目录> && npm install --omit=dev`。
 - 无账号、无凭证、无配置文件。
 
 ## 工作原理
@@ -62,7 +64,7 @@ skills/tramito-bpmn-assistant/  # 技能本体（含打包内核）
 - Agent 把流程建模成**扁平 ELK-BPMN JSON**（pools / lanes / nodes / edges——无坐标、不嵌套），然后跑自带 CLI：`validate` → 按 issue 提示修正 → `render`。
 - [tramito-layout](https://github.com/LcpMarvel/tramito-layout) 是一个编译器：`validateFlat()` 是前端（清晰可改的诊断信息），ELK 摆位 + 自研边路由 + 序列化是后端。输出字节级确定性——同一份图永远编译出同一份 XML。
 - `render` 写出 `<name>.bpmn` + `<name>.graph.json`（可修改源）。已存在的文件绝不覆盖（自动加 `-v2`/`-v3`）。
-- 内核**随技能发布打包并锁定版本**（`tools/build-engine.mjs` 重新生成）。tramito-layout 出新版时重打 bundle、发新技能版本即可；CI 会重建 bundle 与提交文件 diff 防漂移，并在 npm 有更新版本时给出提示。
+- **一个 CLI、两种发行形态**：OpenAI zip 内核随包（`scripts/engine.mjs`，`tools/build-engine.mjs` 按发布版本重打）；WorkBuddy zip 保持 KB 级体积、首跑按 `package.json` 规格（如 `~2.8.1`）从 npm 安装内核。CLI 自动探测所在形态。
 
 ## 文档
 
