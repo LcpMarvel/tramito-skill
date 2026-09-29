@@ -19,7 +19,8 @@ jobs:
       - name: Static checks
         run: |
           node --check skill/scripts/tramito.mjs
-          bash -n package.sh
+          node tools/check-frontmatter.mjs
+          bash -n package.sh package-openai.sh
 
       - name: SKILL.md frontmatter sanity
         run: |

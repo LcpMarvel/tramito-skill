@@ -7,6 +7,9 @@ OUT=dist/tramito-bpmn-assistant.zip
 rm -rf dist "$OUT"
 mkdir -p dist
 
+# SKILL.md frontmatter 守卫：未加引号的值含 ": " 会让宿主 YAML 解析失败（v2.3.0 曾中招）
+node tools/check-frontmatter.mjs
+
 # 安全检查（防御性）：v2 起技能已无任何凭证概念，此守卫防止未来误把密钥类内容带进安装包。
 # fail-closed：grep 报错（退出码≥2）也视为失败。
 # 不做行过滤——占位符 tmt_live_在这里填… 本就匹配不到 20+ 连续 [A-Za-z0-9_-]，任何 -v 都只会误藏真 Key。

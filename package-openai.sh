@@ -9,6 +9,9 @@ STAGE=build/openai-plugin
 OUT=dist/tramito-bpmn-assistant-openai.zip
 SKILL_DIR=skills/tramito-bpmn-assistant
 
+# SKILL.md frontmatter 守卫：未加引号的值含 ": " 会让宿主 YAML 解析失败（v2.3.0 曾中招）
+node tools/check-frontmatter.mjs
+
 rm -rf "$STAGE" "$OUT"
 mkdir -p "$STAGE/.codex-plugin" "$STAGE/$SKILL_DIR"
 

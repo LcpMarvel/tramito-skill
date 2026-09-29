@@ -1,6 +1,6 @@
 {
   "name": "tramito-bpmn-assistant-skill",
-  "version": "2.3.0",
+  "version": "2.3.1",
   "private": true,
   "type": "module",
   "description": "Tramito BPMN assistant skill. Two flavors share this source: bundled (OpenAI zip carries scripts/engine.mjs, fully offline) and npm (WorkBuddy slim zip — first run installs the engine per dependencies below).",
