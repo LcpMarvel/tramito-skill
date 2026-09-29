@@ -1,0 +1,51 @@
+{
+  "pools": [{ "id": "pool_1", "name": "厨房" }],
+  "lanes": [
+    { "id": "lane_prep", "name": "备菜员", "pool": "pool_1" },
+    { "id": "lane_chef", "name": "主厨", "pool": "pool_1" }
+  ],
+  "nodes": [
+    { "id": "start_1", "type": "startEvent", "name": "开始", "lane": "lane_prep" },
+    { "id": "task_2", "type": "userTask", "name": "领取食材", "lane": "lane_prep" },
+    { "id": "gate_3", "type": "exclusiveGateway", "name": "食材是否充足", "lane": "lane_prep", "default": "flow_19" },
+    { "id": "task_4", "type": "userTask", "name": "补充采购", "lane": "lane_prep" },
+    { "id": "task_5", "type": "userTask", "name": "清洗切配", "lane": "lane_prep" },
+    { "id": "gate_6", "type": "parallelGateway", "name": "并行备菜", "lane": "lane_prep" },
+    { "id": "task_7", "type": "userTask", "name": "准备米饭", "lane": "lane_prep" },
+    { "id": "task_8", "type": "userTask", "name": "切配菜", "lane": "lane_prep" },
+    { "id": "task_9", "type": "userTask", "name": "打蛋液", "lane": "lane_prep" },
+    { "id": "gate_10", "type": "parallelGateway", "name": "备菜就绪", "lane": "lane_prep" },
+    { "id": "task_11", "type": "userTask", "name": "热锅烧油", "lane": "lane_chef" },
+    { "id": "task_12", "type": "userTask", "name": "炒制", "lane": "lane_chef", "io": { "inputs": ["食材"] } },
+    { "id": "gate_13", "type": "exclusiveGateway", "name": "米饭是否炒散", "lane": "lane_chef", "default": "flow_20" },
+    { "id": "task_14", "type": "userTask", "name": "调味", "lane": "lane_chef" },
+    { "id": "task_15", "type": "userTask", "name": "试味", "lane": "lane_chef" },
+    { "id": "gate_16", "type": "exclusiveGateway", "name": "试味是否合格", "lane": "lane_chef", "default": "flow_21" },
+    { "id": "task_17", "type": "sendTask", "name": "装盘出餐", "lane": "lane_chef", "io": { "outputs": ["蛋炒饭成品"] } },
+    { "id": "end_18", "type": "endEvent", "name": "出餐完成", "lane": "lane_chef" }
+  ],
+  "edges": [
+    { "id": "flow_1", "source": "start_1", "target": "task_2" },
+    { "id": "flow_2", "source": "task_2", "target": "gate_3" },
+    { "id": "flow_3", "source": "gate_3", "target": "task_5", "name": "充足", "condition": "${stockEnough}" },
+    { "id": "flow_19", "source": "gate_3", "target": "task_4", "name": "不足", "isDefault": true },
+    { "id": "flow_4", "source": "task_4", "target": "task_2" },
+    { "id": "flow_5", "source": "task_5", "target": "gate_6" },
+    { "id": "flow_6", "source": "gate_6", "target": "task_7" },
+    { "id": "flow_7", "source": "gate_6", "target": "task_8" },
+    { "id": "flow_8", "source": "gate_6", "target": "task_9" },
+    { "id": "flow_9", "source": "task_7", "target": "gate_10" },
+    { "id": "flow_10", "source": "task_8", "target": "gate_10" },
+    { "id": "flow_11", "source": "task_9", "target": "gate_10" },
+    { "id": "flow_12", "source": "gate_10", "target": "task_11" },
+    { "id": "flow_13", "source": "task_11", "target": "task_12" },
+    { "id": "flow_14", "source": "task_12", "target": "gate_13" },
+    { "id": "flow_15", "source": "gate_13", "target": "task_14", "name": "已炒散", "condition": "${riceLoose}" },
+    { "id": "flow_20", "source": "gate_13", "target": "task_12", "name": "未炒散", "isDefault": true },
+    { "id": "flow_16", "source": "task_14", "target": "task_15" },
+    { "id": "flow_17", "source": "task_15", "target": "gate_16" },
+    { "id": "flow_22", "source": "gate_16", "target": "task_17", "name": "合格", "condition": "${tastePassed}" },
+    { "id": "flow_21", "source": "gate_16", "target": "task_14", "name": "不合格", "isDefault": true },
+    { "id": "flow_23", "source": "task_17", "target": "end_18" }
+  ]
+}

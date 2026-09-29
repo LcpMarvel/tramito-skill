@@ -41,6 +41,17 @@ cp -R skill ~/.claude/skills/tramito-bpmn-assistant
 
 从 [Releases](https://github.com/LcpMarvel/tramito-skill/releases) 下载 `tramito-bpmn-assistant.zip`（或自己跑 `./package.sh` 打包）→ 技能市场 → 添加技能 → 上传。已在 WorkBuddy 宿主内完成安装与使用实测，详见 [`docs/workbuddy.md`](docs/workbuddy.md)。
 
+### OpenAI（ChatGPT / Codex）——Skills-only 插件
+
+同一技能另发布为 OpenAI 插件：从 [Releases](https://github.com/LcpMarvel/tramito-skill/releases) 下载 **`tramito-bpmn-assistant-openai.zip`**（或自己跑 `./package-openai.sh` 打包）。zip 根布局：
+
+```
+.codex-plugin/plugin.json       # 插件 manifest（无 MCP server——Skills only）
+skills/tramito-bpmn-assistant/  # 技能本体（含打包内核）
+```
+
+完全自包含：运行时不 `npm install`、不联网、无账号——正是沙箱插件宿主要求的形态。在 OpenAI Plugin Submission Portal 里走 **Create plugin → Skills only** 提交（不要选 MCP 形态）。自行打包时 `./package-openai.sh` 会做版本一致性、凭证/本机路径守卫、staging 冒烟，以及解压回验（在解压环境里再跑一次 doctor）。
+
 ### 运行前提
 
 - **Node.js ≥ 20 或 Bun ≥ 1.3**——仅此而已。不需要 npm、不需要联网、不要求目录可写：排版内核已打包在技能内（`scripts/engine.mjs`），完全沙箱环境也能用。

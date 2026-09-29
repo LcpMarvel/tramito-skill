@@ -41,6 +41,17 @@ cp -R skill ~/.claude/skills/tramito-bpmn-assistant
 
 Download `tramito-bpmn-assistant.zip` from [Releases](https://github.com/LcpMarvel/tramito-skill/releases) (or build it yourself with `./package.sh`) → Skills marketplace → Add skill → upload. Install and usage verified in the WorkBuddy host. Details in [`docs/workbuddy.md`](docs/workbuddy.md).
 
+### OpenAI (ChatGPT / Codex) — Skills-only plugin
+
+The same skill ships as an OpenAI plugin: download **`tramito-bpmn-assistant-openai.zip`** from [Releases](https://github.com/LcpMarvel/tramito-skill/releases) (or build it with `./package-openai.sh`). The zip root contains:
+
+```
+.codex-plugin/plugin.json    # plugin manifest (no MCP servers — Skills only)
+skills/tramito-bpmn-assistant/  # the skill itself (bundled engine included)
+```
+
+It is fully self-contained: no runtime `npm install`, no network access, no account — which is exactly what sandboxed plugin hosts require. Submit it in the OpenAI Plugin Submission Portal as **Create plugin → Skills only** (do not choose an MCP variant). Building the zip yourself: `./package-openai.sh` (includes version-sync, credential/local-path guards, a staging smoke test, and a post-zip verification that runs `doctor` from the unzipped environment).
+
 ### Requirements
 
 - **Node.js ≥ 20 or Bun ≥ 1.3** — and nothing else. No npm, no network, no writable requirements: the engine is bundled inside the skill (`scripts/engine.mjs`), so the CLI works in fully sandboxed environments.

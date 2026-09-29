@@ -1,0 +1,23 @@
+{
+  "nodes": [
+    { "id": "start_1", "type": "startEvent", "name": "Start" },
+    { "id": "gate_2", "type": "parallelGateway", "name": "Prepare in parallel" },
+    { "id": "task_3", "type": "userTask", "name": "Create account" },
+    { "id": "task_4", "type": "userTask", "name": "Prepare laptop" },
+    { "id": "task_5", "type": "userTask", "name": "Create badge" },
+    { "id": "gate_6", "type": "parallelGateway", "name": "Wait for all" },
+    { "id": "task_7", "type": "sendTask", "name": "Employee ready" },
+    { "id": "end_8", "type": "endEvent", "name": "Done" }
+  ],
+  "edges": [
+    { "id": "flow_9", "source": "start_1", "target": "gate_2" },
+    { "id": "flow_10", "source": "gate_2", "target": "task_3" },
+    { "id": "flow_11", "source": "gate_2", "target": "task_4" },
+    { "id": "flow_12", "source": "gate_2", "target": "task_5" },
+    { "id": "flow_13", "source": "task_3", "target": "gate_6" },
+    { "id": "flow_14", "source": "task_4", "target": "gate_6" },
+    { "id": "flow_15", "source": "task_5", "target": "gate_6" },
+    { "id": "flow_16", "source": "gate_6", "target": "task_7" },
+    { "id": "flow_17", "source": "task_7", "target": "end_8" }
+  ]
+}

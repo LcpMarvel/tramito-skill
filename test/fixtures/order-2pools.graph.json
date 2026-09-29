@@ -1,0 +1,27 @@
+{
+  "pools": [
+    { "id": "pool_customer", "name": "Customer" },
+    { "id": "pool_shop", "name": "Shop" }
+  ],
+  "nodes": [
+    { "id": "start_1", "type": "startEvent", "name": "Wants to buy", "pool": "pool_customer" },
+    { "id": "task_2", "type": "userTask", "name": "Place order", "pool": "pool_customer" },
+    { "id": "task_3", "type": "sendTask", "name": "Pay", "pool": "pool_customer" },
+    { "id": "start_4", "type": "startEvent", "name": "Order received", "pool": "pool_shop", "eventDefinitionType": "message" },
+    { "id": "task_5", "type": "userTask", "name": "Fulfill order", "pool": "pool_shop" },
+    { "id": "task_6", "type": "sendTask", "name": "Deliver", "pool": "pool_shop" },
+    { "id": "task_7", "type": "receiveTask", "name": "Receive goods", "pool": "pool_customer" },
+    { "id": "end_8", "type": "endEvent", "name": "Done", "pool": "pool_shop" },
+    { "id": "end_9", "type": "endEvent", "name": "Done", "pool": "pool_customer" }
+  ],
+  "edges": [
+    { "id": "flow_10", "source": "start_1", "target": "task_2" },
+    { "id": "flow_11", "source": "task_2", "target": "task_3" },
+    { "id": "flow_12", "source": "task_3", "target": "start_4", "type": "messageFlow" },
+    { "id": "flow_13", "source": "start_4", "target": "task_5" },
+    { "id": "flow_14", "source": "task_5", "target": "task_6" },
+    { "id": "flow_15", "source": "task_6", "target": "task_7", "type": "messageFlow" },
+    { "id": "flow_16", "source": "task_6", "target": "end_8" },
+    { "id": "flow_17", "source": "task_7", "target": "end_9" }
+  ]
+}

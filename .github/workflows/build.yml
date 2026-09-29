@@ -73,9 +73,18 @@ jobs:
           echo "bundled: $VER / npm latest: $LATEST"
           [ "$VER" = "$LATEST" ] || echo "::warning::tramito-layout $LATEST is available (bundled: $VER) — re-run tools/build-engine.mjs and cut a new skill release."
 
+      # 编译测试套件：doctor + 5 个场景 fixture（含复杂蛋炒饭：泳道/并行/互斥/返工/io）
+      - name: Compile tests (scenario fixtures)
+        run: node test/run-tests.mjs
+
       # 打包本身含凭证泄漏守卫（tmt_live_ 长串即失败）；依赖不进包，用户侧首次运行自动安装
-      - name: Package skill zip
+      - name: Package skill zip (WorkBuddy / generic)
         run: ./package.sh
+
+      # OpenAI Skills-only Plugin（.codex-plugin/ + skills/ 布局）；
+      # 脚本内置：版本一致性 / 安全检查 / staging 冒烟 / 解压回验（含解压环境 doctor）
+      - name: Package OpenAI plugin zip
+        run: ./package-openai.sh
 
       - name: Verify zip layout（SKILL.md 必须在根目录；engine bundle 必须进包）
         run: |
@@ -92,7 +101,7 @@ jobs:
       - uses: actions/upload-artifact@v7
         with:
           name: tramito-bpmn-assistant
-          path: dist/tramito-bpmn-assistant.zip
+          path: dist/*.zip
           retention-days: 30
 
   release:
@@ -113,4 +122,4 @@ jobs:
       - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release create "${GITHUB_REF_NAME}" dist/tramito-bpmn-assistant.zip --title "${GITHUB_REF_NAME}" --generate-notes
+        run: gh release create "${GITHUB_REF_NAME}" dist/tramito-bpmn-assistant.zip dist/tramito-bpmn-assistant-openai.zip --title "${GITHUB_REF_NAME}" --generate-notes

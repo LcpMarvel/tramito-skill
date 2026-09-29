@@ -1,0 +1,18 @@
+{
+  "nodes": [
+    { "id": "start_1", "type": "startEvent", "name": "Submit request" },
+    { "id": "task_2", "type": "userTask", "name": "Manager approval" },
+    { "id": "gate_3", "type": "exclusiveGateway", "name": "Amount over 5000?", "default": "flow_9" },
+    { "id": "task_4", "type": "userTask", "name": "GM approval" },
+    { "id": "task_5", "type": "serviceTask", "name": "Finance payout" },
+    { "id": "end_6", "type": "endEvent", "name": "Completed" }
+  ],
+  "edges": [
+    { "id": "flow_7", "source": "start_1", "target": "task_2" },
+    { "id": "flow_8", "source": "task_2", "target": "gate_3" },
+    { "id": "flow_10", "source": "gate_3", "target": "task_4", "name": "over 5000", "condition": "${amount > 5000}" },
+    { "id": "flow_9", "source": "gate_3", "target": "task_5", "name": "otherwise", "isDefault": true },
+    { "id": "flow_11", "source": "task_4", "target": "task_5" },
+    { "id": "flow_12", "source": "task_5", "target": "end_6" }
+  ]
+}

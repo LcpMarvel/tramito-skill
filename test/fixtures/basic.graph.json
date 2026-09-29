@@ -1,0 +1,11 @@
+{
+  "nodes": [
+    { "id": "start_1", "type": "startEvent", "name": "Start" },
+    { "id": "task_2", "type": "userTask", "name": "Do work" },
+    { "id": "end_3", "type": "endEvent", "name": "Done" }
+  ],
+  "edges": [
+    { "id": "flow_4", "source": "start_1", "target": "task_2" },
+    { "id": "flow_5", "source": "task_2", "target": "end_3" }
+  ]
+}

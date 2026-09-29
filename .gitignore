@@ -5,3 +5,4 @@ node_modules/
 skill/.install-lock/
 skill/package-lock.json
 skill/.update-check.json
+build/
