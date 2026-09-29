@@ -109064,6 +109064,7 @@ var ModelBuilder = class {
     };
     this.collectFlowElements(participant.children ?? [], process2.flowElements);
     this.collectSequenceFlows(participant.edges ?? [], process2.flowElements);
+    this.collectAssociations(participant.edges ?? [], process2.artifacts);
     this.collectDataAssociations(participant.edges ?? [], process2.flowElements);
     return process2;
   }
@@ -111368,7 +111369,7 @@ function isLayoutEngineReady() {
 }
 
 // entry.mjs
-var ENGINE_VERSION = "2.8.0";
+var ENGINE_VERSION = "2.8.1";
 export {
   ENGINE_VERSION,
   InternalCompilerError,

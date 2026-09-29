@@ -43,15 +43,15 @@ const CASES = [
     countAtLeast: [{ pattern: '<bpmn:messageFlow', n: 2 }],
   },
   {
-    // 注：输入/输出用节点 io 表达（dataInput/dataOutput + dataAssociations）。
-    // tramito-layout 2.8.0 已知问题：pools+lanes 下显式 association 边会丢 <bpmn:association>
-    // 语义元素（DI 悬空）——engine 修复后可换回 dataObject+association 写法。
+    // 此 fixture 曾暴露 tramito-layout 2.8.0 的 pools+association 语义丢失 bug（2.8.1 修复），
+    // 留作回归：dataObject + association 边必须在语义层与 DI 层同时存在。
     file: 'fried-rice.graph.json',
-    desc: '蛋炒饭：双泳道 + 并行备菜 + 两个互斥判断 + 返工回环 + 输入输出',
-    expectIncludes: ['<bpmn:parallelGateway', '<bpmn:exclusiveGateway', '备菜员', '主厨', '<bpmn:dataInput', '<bpmn:dataOutput'],
+    desc: '蛋炒饭：双泳道 + 并行备菜 + 两个互斥判断 + 返工回环 + 数据对象连线',
+    expectIncludes: ['<bpmn:parallelGateway', '<bpmn:exclusiveGateway', '备菜员', '主厨', '<bpmn:association', '<bpmn:dataObject'],
     countAtLeast: [
       { pattern: '<bpmn:exclusiveGateway', n: 3 },
       { pattern: '<bpmn:parallelGateway', n: 2 },
+      { pattern: '<bpmn:association', n: 2 },
     ],
   },
 ];

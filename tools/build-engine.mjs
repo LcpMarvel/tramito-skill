@@ -45,7 +45,8 @@ const work = mkdtempSync(path.join(tmpdir(), 'tramito-engine-'));
 try {
   console.log(`workspace: ${work}`);
   execSync('npm init -y', { cwd: work, stdio: 'ignore' });
-  execSync(`npm install tramito-layout@${SPEC} esbuild@${ESBUILD_VERSION} --omit=dev --no-audit --no-fund`, { cwd: work, stdio: 'inherit' });
+  // --prefer-online：强制刷新 registry 元数据缓存——刚 publish 的版本否则可能解析到旧 latest。
+  execSync(`npm install tramito-layout@${SPEC} esbuild@${ESBUILD_VERSION} --omit=dev --no-audit --no-fund --prefer-online`, { cwd: work, stdio: 'inherit' });
 
   const dist = readFileSync(path.join(work, 'node_modules/tramito-layout/dist/index.js'), 'utf-8');
   const version = JSON.parse(readFileSync(path.join(work, 'node_modules/tramito-layout/package.json'), 'utf-8')).version;

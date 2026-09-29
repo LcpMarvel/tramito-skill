@@ -1,6 +1,6 @@
 {
   "name": "tramito-bpmn-assistant",
-  "version": "2.2.0",
+  "version": "2.2.1",
   "description": "Generate clean, automatically laid-out BPMN 2.0 diagrams from business process descriptions.",
   "skills": "./skills/"
 }

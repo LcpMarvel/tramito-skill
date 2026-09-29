@@ -16,13 +16,15 @@
     { "id": "task_9", "type": "userTask", "name": "打蛋液", "lane": "lane_prep" },
     { "id": "gate_10", "type": "parallelGateway", "name": "备菜就绪", "lane": "lane_prep" },
     { "id": "task_11", "type": "userTask", "name": "热锅烧油", "lane": "lane_chef" },
-    { "id": "task_12", "type": "userTask", "name": "炒制", "lane": "lane_chef", "io": { "inputs": ["食材"] } },
+    { "id": "task_12", "type": "userTask", "name": "炒制", "lane": "lane_chef" },
     { "id": "gate_13", "type": "exclusiveGateway", "name": "米饭是否炒散", "lane": "lane_chef", "default": "flow_20" },
     { "id": "task_14", "type": "userTask", "name": "调味", "lane": "lane_chef" },
     { "id": "task_15", "type": "userTask", "name": "试味", "lane": "lane_chef" },
     { "id": "gate_16", "type": "exclusiveGateway", "name": "试味是否合格", "lane": "lane_chef", "default": "flow_21" },
-    { "id": "task_17", "type": "sendTask", "name": "装盘出餐", "lane": "lane_chef", "io": { "outputs": ["蛋炒饭成品"] } },
-    { "id": "end_18", "type": "endEvent", "name": "出餐完成", "lane": "lane_chef" }
+    { "id": "task_17", "type": "sendTask", "name": "装盘出餐", "lane": "lane_chef" },
+    { "id": "end_18", "type": "endEvent", "name": "出餐完成", "lane": "lane_chef" },
+    { "id": "d_ing", "type": "dataObject", "name": "食材" },
+    { "id": "d_out", "type": "dataObject", "name": "蛋炒饭成品" }
   ],
   "edges": [
     { "id": "flow_1", "source": "start_1", "target": "task_2" },
@@ -46,6 +48,8 @@
     { "id": "flow_17", "source": "task_15", "target": "gate_16" },
     { "id": "flow_22", "source": "gate_16", "target": "task_17", "name": "合格", "condition": "${tastePassed}" },
     { "id": "flow_21", "source": "gate_16", "target": "task_14", "name": "不合格", "isDefault": true },
-    { "id": "flow_23", "source": "task_17", "target": "end_18" }
+    { "id": "flow_23", "source": "task_17", "target": "end_18" },
+    { "id": "assoc_1", "source": "task_2", "target": "d_ing", "type": "association" },
+    { "id": "assoc_2", "source": "task_17", "target": "d_out", "type": "association" }
   ]
 }

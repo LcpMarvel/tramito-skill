@@ -1,6 +1,6 @@
 {
   "name": "tramito-bpmn-assistant-skill",
-  "version": "2.2.0",
+  "version": "2.2.1",
   "private": true,
   "type": "module",
   "description": "Tramito BPMN assistant skill. Self-contained: the tramito-layout engine is bundled at skill/scripts/engine.mjs (built by tools/build-engine.mjs) — no npm, no network, no node_modules at runtime.",

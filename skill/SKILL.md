@@ -1,6 +1,6 @@
 ---
 name: tramito-bpmn-assistant
-version: 2.2.0
+version: 2.2.1
 description: Process diagram assistant — turn business descriptions into standard BPMN 2.0 files (.bpmn), fully local and offline, no account needed. Trigger words: BPMN, business process, process diagram, workflow diagram, approval flow, swimlane diagram, 流程图, 业务流程, 审批流程, 泳道图
 description_zh: Tramito 流程图助手——描述业务流程，得到标准 BPMN 2.0 文件；校验与排版内核为开源库 tramito-layout，全程本地、无需账号
 description_en: Process diagram assistant — turn business descriptions into standard BPMN 2.0 files (.bpmn), fully local and offline, no account needed. Trigger words: BPMN, business process, process diagram, workflow diagram, approval flow, swimlane diagram.
