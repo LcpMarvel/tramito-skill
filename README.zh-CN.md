@@ -4,19 +4,19 @@
 
 [English](README.md) · 简体中文
 
-官网：**<https://tramito.ai>**
-
 现成的技能 zip 下载：**[Releases](https://github.com/LcpMarvel/tramito-skill/releases)**
 
-把业务描述变成**标准 BPMN 2.0 文件（.bpmn）+ 在线查看器链接**的可公开安装技能。宿主 Agent 负责理解、建模、修复与交付；Tramito 服务器负责校验、排版与文件生成；图在浏览器里用 bpmn-js 真实渲染，可一键导出 PNG——你不需要懂 JSON、XML 或布局参数。
+把业务描述变成**标准 BPMN 2.0 文件（.bpmn）**的可公开安装技能，**全程本地运行**。宿主 Agent 负责理解、建模、修复与交付；排版内核是开源的 [tramito-layout](https://www.npmjs.com/package/tramito-layout)，负责校验、排版与 XML 生成。无账号、无 API Key、无额度；**流程数据不出本机**。排版内核**永远跟随 tramito-layout@latest**——layout 发新版，已安装的技能自动跟进，不需要重新发布技能。
 
 ## 它能做什么
 
 装好后直接对 Agent 说：
 
-- 「员工提交报销，经理审批，超过 5000 元要总经理审，财务发现材料不齐可以退回补材料」→ 得到 `报销流程.bpmn` + 一个打开即见图的查看器链接（页面上一键导出 PNG）
+- 「员工提交报销，经理审批，超过 5000 元要总经理审，财务发现材料不齐可以退回补材料」→ 得到 `expense.bpmn`——带完整排版的标准 BPMN 2.0 文件
 - 「把经理改成部门负责人」→ 基于当前流程修改后交付 v2，旧文件保留
-- 「这个流程是什么意思？」→ 直接解释，不消耗转换次数
+- 「这个流程是什么意思？」→ 直接解释，不做转换
+
+产物用任何标准 BPMN 编辑器打开：[Camunda Modeler](https://camunda.com/download/modeler/)（可导出 PNG/SVG）、[demo.bpmn.io](https://demo.bpmn.io)（把文件拖进页面）、或 VS Code 的 BPMN 预览插件。
 
 四个开箱即用的场景（含真实产物与示例图）：
 
@@ -32,53 +32,38 @@
 ### Claude Code（已实测）
 
 ```bash
-# 用户级安装（所有项目可用）
+# 用户级（所有项目可用）
 cp -R skill ~/.claude/skills/tramito-bpmn-assistant
 # 或项目级：cp -R skill <project>/.claude/skills/tramito-bpmn-assistant
 ```
 
-运行环境需要 **Node.js ≥ 18 或 Bun**，以及出站 HTTPS（默认 `https://tramito.ai`）。
-
 ### WorkBuddy（已实测）
 
-下载 [Releases](https://github.com/LcpMarvel/tramito-skill/releases) 里的 `tramito-bpmn-assistant.zip`（或自己 `./package.sh` 打包）→ 技能市场 →【添加技能】上传。安装与使用已在 WorkBuddy 宿主内实测通过（2026-09）。细节见 [`docs/workbuddy.md`](docs/workbuddy.md)。
+从 [Releases](https://github.com/LcpMarvel/tramito-skill/releases) 下载 `tramito-bpmn-assistant.zip`（或自己跑 `./package.sh` 打包）→ 技能市场 → 添加技能 → 上传。已在 WorkBuddy 宿主内完成安装与使用实测，详见 [`docs/workbuddy.md`](docs/workbuddy.md)。
 
-### 配置凭证（必做，技能不内置任何共享 Key）
+### 运行前提
 
-一条命令完成登录（**不用复制粘贴 Key**）：
+- **Node.js ≥ 20 或 Bun ≥ 1.3**，且首次运行时 **npm 可联网**——CLI 会自动安装 tramito-layout@latest（几秒钟）。
+- 之后每天至多一次静默检查更新并自动安装新版 tramito-layout；离线自动跳过。`TRAMITO_NO_AUTO_UPDATE=1` 可关；`TRAMITO_REGISTRY=<镜像地址>` 让检查与安装走同一镜像；`node scripts/tramito.mjs update` 立即同步。
+- 技能目录需可写（`node_modules` 要装在这里）。不可写时手动执行：`cd <技能目录> && npm install tramito-layout@latest --omit=dev`。
+- 无账号、无凭证、无配置文件。
 
-```bash
-node skill/scripts/tramito.js login
-```
+## 工作原理
 
-- 终端会打印一个链接——在浏览器打开（登录 tramito.ai，没账号就先注册并验证邮箱），确认配对码后点「授权此设备」；配对页自动创建 Key，CLI 自动写入 `~/.tramito/config.json` 并验证。
-- 无浏览器的环境（纯 SSH/CI）：`node skill/scripts/tramito.js login --paste` 粘贴 Key（输入不回显，自动写配置）；Key 在 tramito.ai 的 Settings → API Keys 创建。
-- 高级用户也可手动配置：环境变量 `TRAMITO_API_KEY`（`TRAMITO_BASE_URL` 可选，自建才改），或直接写 `~/.tramito/config.json`。
-- **不要把 Key 发到聊天里、不要写进流程文件或仓库**；泄漏过的 Key 到 Settings → API Keys 撤销。`tramito.js logout` 删除本机配置（服务端 Key 不受影响）。
-
-## 额度与规则（注册即用）
-
-| 事项 | 规则 |
-| --- | --- |
-| 身份 | 必须注册并使用自己的 API Key；同一账号（组织）所有 Key、所有设备共用额度 |
-| 免费额度 | 每月 **200 次**成功转换（UTC 自然月，不结转）；与网页版 AI 生成/修改额度相互独立 |
-| 付费 | 已有 Pro / Max 订阅直接用，**转换次数不限**（无隐藏月度上限） |
-| 并发 | 免费同时 1 个转换，付费同时 3 个 |
-| 计次口径 | 转换成功且 .bpmn 可领取（查看器可用）算 1 次；失败、超时、校验不通过不计次 |
-| 产物 | `.bpmn` + 查看器链接；私有、保留 24 小时，期间反复打开/下载不重复计次；PNG 在查看器内由浏览器导出 |
-| 单次边界 | 单图 ≤100 节点 / ≤200 连线；请求体 ≤1 MiB；转换超时 30s |
-
-数据边界：流程结构和节点文字会发送到 Tramito 完成转换；不上传聊天记录、无关文件或其它凭证。示例中的公司、人名、金额均为虚构。
+- Agent 把流程建模成**扁平 ELK-BPMN JSON**（pools / lanes / nodes / edges——无坐标、不嵌套），然后跑自带 CLI：`validate` → 按 issue 提示修正 → `render`。
+- [tramito-layout](https://github.com/LcpMarvel/tramito-layout) 是一个编译器：`validateFlat()` 是前端（清晰可改的诊断信息），ELK 摆位 + 自研边路由 + 序列化是后端。输出字节级确定性——同一份图永远编译出同一份 XML。
+- `render` 写出 `<name>.bpmn` + `<name>.graph.json`（可修改源）。已存在的文件绝不覆盖（自动加 `-v2`/`-v3`）。
+- **引擎更新与技能发布解耦**：skill 永远跟随 tramito-layout@latest（每日后台检查）。CI 每次都装 @latest 跑示例回归，layout 改了排版输出会最先在那里红起来。
 
 ## 文档
 
 - 技能定义与工作流：[`skill/SKILL.md`](skill/SKILL.md)
 - 输入规范（扁平 ELK-BPMN JSON）：[`skill/references/graph-spec.md`](skill/references/graph-spec.md)
-- API 契约与错误码：[`skill/references/api.md`](skill/references/api.md)
-- 四场景可复制输入：[`skill/references/scenarios.md`](skill/references/scenarios.md)
-- CLI 工具（`render / validate / usage / download / link / spec`）：[`skill/scripts/tramito.js`](skill/scripts/tramito.js)
+- 可直接复制的场景输入：[`skill/references/scenarios.md`](skill/references/scenarios.md)
+- CLI（`validate / render / update / doctor`）：[`skill/scripts/tramito.mjs`](skill/scripts/tramito.mjs)
+- 排版内核：[tramito-layout（npm）](https://www.npmjs.com/package/tramito-layout) · [GitHub](https://github.com/LcpMarvel/tramito-layout)
 - WorkBuddy 安装细节：[`docs/workbuddy.md`](docs/workbuddy.md)
 
-## 许可证
+## 许可
 
-MIT — 见 [LICENSE](LICENSE)。
+MIT——见 [LICENSE](LICENSE)。

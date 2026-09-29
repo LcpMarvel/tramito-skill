@@ -18,7 +18,7 @@ jobs:
 
       - name: Static checks
         run: |
-          node --check skill/scripts/tramito.js
+          node --check skill/scripts/tramito.mjs
           bash -n package.sh
 
       - name: SKILL.md frontmatter sanity
@@ -30,17 +30,48 @@ jobs:
           grep -q '^description_en: ' skill/SKILL.md
           grep -q '^author: ' skill/SKILL.md
 
-      # 打包本身含凭证泄漏守卫（tmt_live_ 长串即失败）
+      # v2：排版内核是 npm 依赖（tramito-layout），CI 按用户侧同样的方式装好再测。
+      # 显式 @latest：skill 永远跟随最新版——布局输出变化会先在这里红起来（金丝雀）。
+      - name: Install skill deps (latest)
+        working-directory: skill
+        run: npm install tramito-layout@latest --omit=dev --no-audit --no-fund
+
+      - name: Smoke — doctor / validate / render
+        run: |
+          node skill/scripts/tramito.mjs doctor | grep -q '"ok": true'
+          node skill/scripts/tramito.mjs validate examples/expense-approval/expense-approval.graph.json | grep -q '"valid": true'
+          node skill/scripts/tramito.mjs render examples/expense-approval/expense-approval.graph.json --out /tmp/smoke --name smoke >/dev/null
+          head -c 200 /tmp/smoke/smoke.bpmn | grep -q '<?xml'
+          grep -q '<bpmn:definitions' /tmp/smoke/smoke.bpmn
+
+      # 布局输出确定性已验证（同输入字节级一致）：重渲染必须与仓库内基线零 diff。
+      # CI 装 @latest，所以这里同时是「跟随最新」的金丝雀：新版本改了排版就红，
+      # 处理方式 = 人工确认新版输出后重新生成基线（改 examples/*.bpmn 提交）。
+      - name: Regression — re-rendered examples must match committed .bpmn
+        run: |
+          set -e
+          for ex in expense-approval order-fulfillment employee-onboarding procurement; do
+            node skill/scripts/tramito.mjs render "examples/$ex/$ex.graph.json" --out /tmp/rerender --name "$ex" >/dev/null
+            diff "/tmp/rerender/$ex.bpmn" "examples/$ex/$ex.bpmn" || {
+              echo "✗ $ex.bpmn 与最新 tramito-layout 输出不一致——新版改了排版行为。确认输出无误后重新生成基线并提交。" >&2
+              exit 1
+            }
+          done
+
+      # 打包本身含凭证泄漏守卫（tmt_live_ 长串即失败）；依赖不进包，用户侧首次运行自动安装
       - name: Package skill zip
         run: ./package.sh
 
-      - name: Verify zip layout（SKILL.md 必须在根目录，且无缺省文件）
+      - name: Verify zip layout（SKILL.md 必须在根目录；package.json 进包，node_modules/lock 不进）
         run: |
           unzip -l dist/tramito-bpmn-assistant.zip | grep -qE ' SKILL\.md$'
           ! unzip -l dist/tramito-bpmn-assistant.zip | grep -q 'skill/SKILL.md'
           unzip -p dist/tramito-bpmn-assistant.zip SKILL.md | head -1 | grep -q '^---$'
           unzip -l dist/tramito-bpmn-assistant.zip | grep -q 'references/graph-spec.md'
-          unzip -l dist/tramito-bpmn-assistant.zip | grep -q 'scripts/tramito.js'
+          unzip -l dist/tramito-bpmn-assistant.zip | grep -q 'scripts/tramito.mjs'
+          unzip -l dist/tramito-bpmn-assistant.zip | grep -qE ' package\.json$'
+          ! unzip -l dist/tramito-bpmn-assistant.zip | grep -q 'node_modules'
+          ! unzip -l dist/tramito-bpmn-assistant.zip | grep -q 'package-lock'
 
       - uses: actions/upload-artifact@v4
         with:

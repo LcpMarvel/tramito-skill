@@ -1,52 +1,52 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="bpmn-elk-layout" exporterVersion="1.0.0">
   <bpmn:collaboration id="collaboration_1">
-    <bpmn:participant id="pool_1" name="客户" processRef="pool_1_process" />
-    <bpmn:participant id="pool_2" name="商家" processRef="pool_2_process" />
-    <bpmn:participant id="pool_3" name="第三方物流" />
+    <bpmn:participant id="pool_1" name="Customer" processRef="pool_1_process" />
+    <bpmn:participant id="pool_2" name="Merchant" processRef="pool_2_process" />
+    <bpmn:participant id="pool_3" name="Carrier" processRef="Process_pool_3" />
     <bpmn:messageFlow id="flow_15" sourceRef="task_6" targetRef="start_12" />
-    <bpmn:messageFlow id="flow_21" name="委托配送" sourceRef="task_9" targetRef="pool_3" />
+    <bpmn:messageFlow id="flow_21" name="delegate delivery" sourceRef="task_9" targetRef="pool_3" />
     <bpmn:messageFlow id="flow_22" sourceRef="pool_3" targetRef="task_20" />
   </bpmn:collaboration>
-  <bpmn:process id="pool_1_process" name="客户" isExecutable="true">
-    <bpmn:startEvent id="start_4" name="需要购买商品">
+  <bpmn:process id="pool_1_process" name="Customer" isExecutable="true">
+    <bpmn:startEvent id="start_4" name="Wants to buy a product">
       <bpmn:outgoing>flow_13</bpmn:outgoing>
     </bpmn:startEvent>
-    <bpmn:userTask id="task_5" name="浏览并下单">
+    <bpmn:userTask id="task_5" name="Browse and order">
       <bpmn:incoming>flow_13</bpmn:incoming>
       <bpmn:outgoing>flow_14</bpmn:outgoing>
     </bpmn:userTask>
-    <bpmn:sendTask id="task_6" name="支付订单">
+    <bpmn:sendTask id="task_6" name="Pay for order">
       <bpmn:incoming>flow_14</bpmn:incoming>
     </bpmn:sendTask>
-    <bpmn:receiveTask id="task_20" name="签收商品">
+    <bpmn:receiveTask id="task_20" name="Sign for goods">
       <bpmn:outgoing>flow_23</bpmn:outgoing>
     </bpmn:receiveTask>
-    <bpmn:endEvent id="end_10" name="收到商品">
+    <bpmn:endEvent id="end_10" name="Goods received">
       <bpmn:incoming>flow_23</bpmn:incoming>
     </bpmn:endEvent>
     <bpmn:sequenceFlow id="flow_13" sourceRef="start_4" targetRef="task_5" />
     <bpmn:sequenceFlow id="flow_14" sourceRef="task_5" targetRef="task_6" />
     <bpmn:sequenceFlow id="flow_23" sourceRef="task_20" targetRef="end_10" />
   </bpmn:process>
-  <bpmn:process id="pool_2_process" name="商家" isExecutable="true">
-    <bpmn:startEvent id="start_12" name="收到新订单">
+  <bpmn:process id="pool_2_process" name="Merchant" isExecutable="true">
+    <bpmn:startEvent id="start_12" name="New order received">
       <bpmn:outgoing>flow_16</bpmn:outgoing>
       <bpmn:messageEventDefinition />
     </bpmn:startEvent>
-    <bpmn:receiveTask id="task_7" name="确认订单">
+    <bpmn:receiveTask id="task_7" name="Confirm order">
       <bpmn:incoming>flow_16</bpmn:incoming>
       <bpmn:outgoing>flow_17</bpmn:outgoing>
     </bpmn:receiveTask>
-    <bpmn:userTask id="task_8" name="备货">
+    <bpmn:userTask id="task_8" name="Prepare stock">
       <bpmn:incoming>flow_17</bpmn:incoming>
       <bpmn:outgoing>flow_18</bpmn:outgoing>
     </bpmn:userTask>
-    <bpmn:sendTask id="task_9" name="发货">
+    <bpmn:sendTask id="task_9" name="Ship order">
       <bpmn:incoming>flow_18</bpmn:incoming>
       <bpmn:outgoing>flow_19</bpmn:outgoing>
     </bpmn:sendTask>
-    <bpmn:endEvent id="end_11" name="订单完成">
+    <bpmn:endEvent id="end_11" name="Order completed">
       <bpmn:incoming>flow_19</bpmn:incoming>
     </bpmn:endEvent>
     <bpmn:sequenceFlow id="flow_16" sourceRef="start_12" targetRef="task_7" />
@@ -65,7 +65,7 @@
       <bpmndi:BPMNShape id="start_4_di" bpmnElement="start_4">
         <dc:Bounds x="328" y="54" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="304" y="94" width="84" height="14" />
+          <dc:Bounds x="269" y="36" width="154" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="task_5_di" bpmnElement="task_5">
@@ -80,7 +80,7 @@
       <bpmndi:BPMNShape id="end_10_di" bpmnElement="end_10">
         <dc:Bounds x="242" y="54" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="232" y="94" width="56" height="14" />
+          <dc:Bounds x="211" y="94" width="98" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="pool_2_di" bpmnElement="pool_2" isHorizontal="true">
@@ -89,7 +89,7 @@
       <bpmndi:BPMNShape id="start_12_di" bpmnElement="start_12">
         <dc:Bounds x="656" y="228" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="639" y="268" width="70" height="14" />
+          <dc:Bounds x="611" y="268" width="126" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="task_7_di" bpmnElement="task_7">
@@ -104,7 +104,7 @@
       <bpmndi:BPMNShape id="end_11_di" bpmnElement="end_11">
         <dc:Bounds x="1312" y="228" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="1302" y="268" width="56" height="14" />
+          <dc:Bounds x="1277.5" y="268" width="105" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="pool_3_di" bpmnElement="pool_3" isHorizontal="true">
@@ -141,18 +141,6 @@
       <bpmndi:BPMNEdge id="flow_15_di" bpmnElement="flow_15">
         <di:waypoint x="674" y="112" />
         <di:waypoint x="674" y="228" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="flow_21_di" bpmnElement="flow_21">
-        <di:waypoint x="1182" y="286" />
-        <di:waypoint x="1182" y="317" />
-        <di:waypoint x="387" y="317" />
-        <di:waypoint x="387" y="348" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="flow_22_di" bpmnElement="flow_22">
-        <di:waypoint x="387" y="348" />
-        <di:waypoint x="387" y="230" />
-        <di:waypoint x="112" y="230" />
-        <di:waypoint x="112" y="112" />
       </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>

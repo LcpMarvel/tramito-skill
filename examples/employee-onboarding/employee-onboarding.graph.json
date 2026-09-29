@@ -2,7 +2,7 @@
   "pools": [
     {
       "id": "pool_1",
-      "name": "公司"
+      "name": "Company"
     }
   ],
   "lanes": [
@@ -18,7 +18,7 @@
     },
     {
       "id": "lane_4",
-      "name": "行政",
+      "name": "Admin",
       "pool": "pool_1"
     }
   ],
@@ -26,49 +26,49 @@
     {
       "id": "start_5",
       "type": "startEvent",
-      "name": "发出入职通知",
+      "name": "Send onboarding notice",
       "lane": "lane_2"
     },
     {
       "id": "task_6",
       "type": "userTask",
-      "name": "HR审核入职材料",
+      "name": "HR reviews documents",
       "lane": "lane_2"
     },
     {
       "id": "gate_7",
       "type": "parallelGateway",
-      "name": "并行准备",
+      "name": "Prepare in parallel",
       "lane": "lane_2"
     },
     {
       "id": "task_8",
       "type": "serviceTask",
-      "name": "IT开通账号",
+      "name": "IT creates account",
       "lane": "lane_3"
     },
     {
       "id": "task_9",
       "type": "userTask",
-      "name": "行政配置工位",
+      "name": "Admin prepares workstation",
       "lane": "lane_4"
     },
     {
       "id": "gate_10",
       "type": "parallelGateway",
-      "name": "等待全部完成",
+      "name": "Wait for all",
       "lane": "lane_2"
     },
     {
       "id": "task_11",
       "type": "sendTask",
-      "name": "通知员工报到",
+      "name": "Notify employee to report",
       "lane": "lane_2"
     },
     {
       "id": "end_12",
       "type": "endEvent",
-      "name": "入职完成",
+      "name": "Onboarding completed",
       "lane": "lane_2"
     }
   ],

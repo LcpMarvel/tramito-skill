@@ -4,19 +4,19 @@
 
 English · [简体中文](README.zh-CN.md)
 
-Official site: **<https://tramito.ai>**
-
 Download the ready-made skill zip: **[Releases](https://github.com/LcpMarvel/tramito-skill/releases)**
 
-A publicly installable skill that turns business descriptions into **standard BPMN 2.0 files (.bpmn) plus an online viewer link**. The host agent handles understanding, modeling, fixing and delivery; the Tramito server handles validation, layout and file generation; diagrams render in the browser via bpmn-js with one-click PNG export — no JSON/XML/layout knowledge required.
+A publicly installable skill that turns business descriptions into **standard BPMN 2.0 files (.bpmn)** — **fully local**. The host agent handles understanding, modeling, fixing and delivery; the layout engine ([tramito-layout](https://www.npmjs.com/package/tramito-layout), open source) handles validation, layout and XML generation. No account, no API key, no quota; process data never leaves the machine. The engine **follows tramito-layout@latest** — layout releases reach installed skills automatically, no skill re-publishing needed.
 
 ## What it does
 
 Try saying to your agent:
 
-- *"Expense report: employee submits, manager approves, amounts over 5000 need the GM, finance can return it for missing documents"* → you get `expense.bpmn` plus a link that opens the diagram in your browser (with a one-click PNG export).
+- *"Expense report: employee submits, manager approves, amounts over 5000 need the GM, finance can return it for missing documents"* → you get `expense.bpmn` — a standard BPMN 2.0 file with full layout.
 - *"Rename manager to department head"* → a v2 based on the current source; the previous files are kept.
-- *"What does this flow do?"* → a plain answer, consuming nothing.
+- *"What does this flow do?"* → a plain answer, converting nothing.
+
+Open the result in any standard BPMN editor — [Camunda Modeler](https://camunda.com/download/modeler/) (exports PNG/SVG), [demo.bpmn.io](https://demo.bpmn.io) (drag the file onto the page), or a VS Code BPMN preview extension.
 
 Four ready-to-use scenarios (with real artifacts and sample images):
 
@@ -37,42 +37,31 @@ cp -R skill ~/.claude/skills/tramito-bpmn-assistant
 # or project-level: cp -R skill <project>/.claude/skills/tramito-bpmn-assistant
 ```
 
-Requires **Node.js ≥ 18 or Bun** and outbound HTTPS (default `https://tramito.ai`).
-
 ### WorkBuddy (tested)
 
-Download `tramito-bpmn-assistant.zip` from [Releases](https://github.com/LcpMarvel/tramito-skill/releases) (or build it yourself with `./package.sh`) → Skills marketplace → Add skill → upload. Install and usage verified in the WorkBuddy host (2026-09). Details in [`docs/workbuddy.md`](docs/workbuddy.md).
+Download `tramito-bpmn-assistant.zip` from [Releases](https://github.com/LcpMarvel/tramito-skill/releases) (or build it yourself with `./package.sh`) → Skills marketplace → Add skill → upload. Install and usage verified in the WorkBuddy host. Details in [`docs/workbuddy.md`](docs/workbuddy.md).
 
-### Configure credentials (required — no shared key is bundled)
+### Requirements
 
-One command to log in (**no key copy-pasting**):
+- **Node.js ≥ 20 or Bun ≥ 1.3**, plus **npm network access on first run** — the CLI installs tramito-layout@latest automatically (a few seconds).
+- Afterwards a silent update check contacts the npm registry at most once a day and installs newer tramito-layout releases; offline machines simply skip it. Opt out with `TRAMITO_NO_AUTO_UPDATE=1`; point `TRAMITO_REGISTRY=<url>` at a mirror so check and install use the same source. Sync immediately with `node scripts/tramito.mjs update`.
+- The skill directory must be writable (that's where `node_modules` lands). No writable directory? Run it manually: `cd <skill dir> && npm install tramito-layout@latest --omit=dev`.
+- No account, no credentials, no configuration files.
 
-```bash
-node skill/scripts/tramito.js login
-```
+## How it works
 
-- The terminal prints a link — open it in your browser (sign in to tramito.ai, registering and verifying your email first if needed), confirm the pairing code and click “Authorize this device”. The page creates a key automatically; the CLI writes it to `~/.tramito/config.json` and verifies it.
-- No browser (SSH/CI): `node skill/scripts/tramito.js login --paste` and paste your key (hidden input, auto-saved). Keys are created at tramito.ai → Settings → API Keys.
-- Advanced: env var `TRAMITO_API_KEY` (optionally `TRAMITO_BASE_URL` for self-hosted), or write `~/.tramito/config.json` directly.
-- **Never paste keys into chat, process files or repos**; revoke leaked keys in Settings → API Keys. `tramito.js logout` removes the local config (server-side key unaffected).
-
-## Quota (per account/org, shared across all keys & devices)
-
-- Free: **200 successful conversions per month** (UTC calendar month, no rollover) — independent from the web editor's AI quota.
-- Pro/Max: unlimited conversions, no hidden caps. Concurrency: 1 (free) / 3 (paid).
-- A conversion counts only when it succeeds and the .bpmn (plus viewer link) is deliverable; failures, timeouts and validation errors never count.
-- Artifacts are private, retained 24 h, re-openable within that window at no extra charge; PNG export happens in the viewer (browser-side).
-- Limits per request: ≤100 nodes / ≤200 edges, ≤1 MiB body, 30 s server timeout.
-
-Data boundary: only the process structure and node texts are sent to Tramito — never chat history, unrelated files or other credentials. All example data is fictional.
+- The agent models the process as **flat ELK-BPMN JSON** (pools / lanes / nodes / edges — no coordinates, no nesting), then runs the bundled CLI: `validate` → fix per issue hints → `render`.
+- [tramito-layout](https://github.com/LcpMarvel/tramito-layout) is a compiler: `validateFlat()` is the front end (clear, fixable diagnostics), ELK placement + a custom edge router + serializer are the back end. Output is byte-for-byte deterministic — the same graph always compiles to the same XML.
+- `render` writes `<name>.bpmn` + `<name>.graph.json` (the editable source). Existing files are never overwritten (`-v2`/`-v3` suffixes).
+- **Engine updates are decoupled from skill releases**: the skill always follows tramito-layout@latest (daily background check; see Requirements). CI re-renders the examples against @latest on every run, so layout changes that alter output surface there first.
 
 ## Documentation
 
 - Skill definition & workflow: [`skill/SKILL.md`](skill/SKILL.md)
 - Input spec (flat ELK-BPMN JSON): [`skill/references/graph-spec.md`](skill/references/graph-spec.md)
-- API contract & error codes: [`skill/references/api.md`](skill/references/api.md)
 - Copy-paste scenario inputs: [`skill/references/scenarios.md`](skill/references/scenarios.md)
-- CLI (`render / validate / usage / download / link / spec`): [`skill/scripts/tramito.js`](skill/scripts/tramito.js)
+- CLI (`validate / render / update / doctor`): [`skill/scripts/tramito.mjs`](skill/scripts/tramito.mjs)
+- Layout engine: [tramito-layout on npm](https://www.npmjs.com/package/tramito-layout) · [GitHub](https://github.com/LcpMarvel/tramito-layout)
 - WorkBuddy install details: [`docs/workbuddy.md`](docs/workbuddy.md)
 
 ## License

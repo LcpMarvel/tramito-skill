@@ -1,7 +1,7 @@
-# 采购（互斥分支）
+# Procurement (mutually exclusive branches)
 
-提出物料需求 → 库存充足直接领用；不足则创建采购单 → 到货验收 → 不合格办理退货（退回重新采购）。
+Raise a material request → if stock is sufficient, take from the warehouse; otherwise create a purchase order → inspect the delivery → on failure, handle the return (loops back to re-purchase).
 
-- `procurement.graph.json` / `procurement.bpmn` / `procurement.png`（PNG 为离线生成的文档素材；线上在查看器内导出）
+- `procurement.graph.json` / `procurement.bpmn` / `procurement.png` (PNG is offline-generated documentation material)
 
-数据虚构。重新生成：`node ../../skill/scripts/tramito.js render procurement.graph.json`。
+All data is fictional. Regenerate: `node ../../skill/scripts/tramito.mjs render procurement.graph.json`.

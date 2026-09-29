@@ -7,11 +7,12 @@ OUT=dist/tramito-bpmn-assistant.zip
 rm -rf dist "$OUT"
 mkdir -p dist
 
-# 安全检查：安装包不得包含任何真实凭证。fail-closed：grep 报错（退出码≥2）也视为失败。
+# 安全检查（防御性）：v2 起技能已无任何凭证概念，此守卫防止未来误把密钥类内容带进安装包。
+# fail-closed：grep 报错（退出码≥2）也视为失败。
 # 不做行过滤——占位符 tmt_live_在这里填… 本就匹配不到 20+ 连续 [A-Za-z0-9_-]，任何 -v 都只会误藏真 Key。
 # set -e 下 grep 无匹配（退出码 1）是正常路径，必须临时关闭再取真实退出码
 set +e
-leaks=$(grep -rEn 'tmt_live_[A-Za-z0-9_-]{20,}' skill/)
+leaks=$(grep -rEn 'tmt_live_[A-Za-z0-9_-]{20,}' skill/ --exclude-dir=node_modules)
 status=$?
 set -e
 if [ $status -ge 2 ]; then
@@ -24,6 +25,9 @@ if [ -n "$leaks" ]; then
   exit 1
 fi
 
-(cd skill && zip -r "../$OUT" . -x '*.DS_Store' -x '__MACOSX/*')
+# 依赖（node_modules）、安装锁、本地 lock 与更新时间戳不进包：用户侧首次运行时
+# CLI 自动安装 tramito-layout@latest 并每日后台跟随最新版（见 scripts/tramito.mjs）。
+# package.json 必须进包——它是手动安装回退路径的输入。
+(cd skill && zip -r "../$OUT" . -x '*.DS_Store' -x '__MACOSX/*' -x 'node_modules/*' -x '.install-lock/*' -x '.update-check.json' -x 'package-lock.json')
 echo "✓ $OUT"
 unzip -l "$OUT" | tail -3

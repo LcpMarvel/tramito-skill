@@ -2,15 +2,15 @@
   "pools": [
     {
       "id": "pool_1",
-      "name": "客户"
+      "name": "Customer"
     },
     {
       "id": "pool_2",
-      "name": "商家"
+      "name": "Merchant"
     },
     {
       "id": "pool_3",
-      "name": "第三方物流",
+      "name": "Carrier",
       "isBlackBox": true
     }
   ],
@@ -18,62 +18,62 @@
     {
       "id": "start_4",
       "type": "startEvent",
-      "name": "需要购买商品",
+      "name": "Wants to buy a product",
       "pool": "pool_1"
     },
     {
       "id": "task_5",
       "type": "userTask",
-      "name": "浏览并下单",
+      "name": "Browse and order",
       "pool": "pool_1"
     },
     {
       "id": "task_6",
       "type": "sendTask",
-      "name": "支付订单",
+      "name": "Pay for order",
       "pool": "pool_1"
     },
     {
       "id": "start_12",
       "type": "startEvent",
-      "name": "收到新订单",
+      "name": "New order received",
       "pool": "pool_2",
       "eventDefinitionType": "message"
     },
     {
       "id": "task_7",
       "type": "receiveTask",
-      "name": "确认订单",
+      "name": "Confirm order",
       "pool": "pool_2"
     },
     {
       "id": "task_8",
       "type": "userTask",
-      "name": "备货",
+      "name": "Prepare stock",
       "pool": "pool_2"
     },
     {
       "id": "task_9",
       "type": "sendTask",
-      "name": "发货",
+      "name": "Ship order",
       "pool": "pool_2"
     },
     {
       "id": "end_11",
       "type": "endEvent",
-      "name": "订单完成",
+      "name": "Order completed",
       "pool": "pool_2"
     },
     {
       "id": "task_20",
       "type": "receiveTask",
-      "name": "签收商品",
+      "name": "Sign for goods",
       "pool": "pool_1"
     },
     {
       "id": "end_10",
       "type": "endEvent",
-      "name": "收到商品",
+      "name": "Goods received",
       "pool": "pool_1"
     }
   ],
@@ -118,7 +118,7 @@
       "id": "flow_21",
       "source": "task_9",
       "target": "pool_3",
-      "name": "委托配送",
+      "name": "delegate delivery",
       "type": "messageFlow"
     },
     {

@@ -2,23 +2,23 @@
   "pools": [
     {
       "id": "pool_1",
-      "name": "公司"
+      "name": "Company"
     }
   ],
   "lanes": [
     {
       "id": "lane_2",
-      "name": "申请人",
+      "name": "Applicant",
       "pool": "pool_1"
     },
     {
       "id": "lane_3",
-      "name": "审批人",
+      "name": "Approvers",
       "pool": "pool_1"
     },
     {
       "id": "lane_4",
-      "name": "财务",
+      "name": "Finance",
       "pool": "pool_1"
     }
   ],
@@ -26,57 +26,57 @@
     {
       "id": "start_5",
       "type": "startEvent",
-      "name": "提交报销",
+      "name": "Submit expense",
       "lane": "lane_2"
     },
     {
       "id": "task_6",
       "type": "userTask",
-      "name": "填写报销单",
+      "name": "Fill expense form",
       "lane": "lane_2"
     },
     {
       "id": "task_7",
       "type": "userTask",
-      "name": "经理审批",
+      "name": "Manager approval",
       "lane": "lane_3"
     },
     {
       "id": "gateway_8",
       "type": "exclusiveGateway",
-      "name": "金额是否超过5000元",
+      "name": "Amount over 5000?",
       "lane": "lane_3",
       "default": "flow_18"
     },
     {
       "id": "task_9",
       "type": "userTask",
-      "name": "总经理审批",
+      "name": "GM approval",
       "lane": "lane_3"
     },
     {
       "id": "gateway_11",
       "type": "exclusiveGateway",
-      "name": "材料是否齐全",
+      "name": "Documents complete?",
       "lane": "lane_4",
       "default": "flow_22"
     },
     {
       "id": "task_10",
       "type": "serviceTask",
-      "name": "财务打款",
+      "name": "Finance payout",
       "lane": "lane_4"
     },
     {
       "id": "task_12",
       "type": "sendTask",
-      "name": "通知补材料",
+      "name": "Notify missing documents",
       "lane": "lane_4"
     },
     {
       "id": "end_13",
       "type": "endEvent",
-      "name": "报销完成",
+      "name": "Expense completed",
       "lane": "lane_4"
     }
   ],
@@ -100,14 +100,14 @@
       "id": "flow_17",
       "source": "gateway_8",
       "target": "task_9",
-      "name": "超过5000元",
+      "name": "over 5000",
       "condition": "${amount > 5000}"
     },
     {
       "id": "flow_18",
       "source": "gateway_8",
       "target": "gateway_11",
-      "name": "不超过5000元",
+      "name": "within 5000",
       "isDefault": true
     },
     {
@@ -119,7 +119,7 @@
       "id": "flow_20",
       "source": "gateway_11",
       "target": "task_10",
-      "name": "材料齐全",
+      "name": "complete",
       "condition": "${docsComplete}"
     },
     {
@@ -131,7 +131,7 @@
       "id": "flow_22",
       "source": "gateway_11",
       "target": "task_12",
-      "name": "缺材料",
+      "name": "missing",
       "isDefault": true
     },
     {

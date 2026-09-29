@@ -1,77 +1,77 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="bpmn-elk-layout" exporterVersion="1.0.0">
   <bpmn:collaboration id="collaboration_1">
-    <bpmn:participant id="pool_1" name="公司" processRef="pool_1_process" />
+    <bpmn:participant id="pool_1" name="Company" processRef="pool_1_process" />
   </bpmn:collaboration>
-  <bpmn:process id="pool_1_process" name="公司" isExecutable="true">
+  <bpmn:process id="pool_1_process" name="Company" isExecutable="true">
     <bpmn:laneSet id="LaneSet_1">
-      <bpmn:lane id="lane_2" name="申请人">
+      <bpmn:lane id="lane_2" name="Applicant">
         <bpmn:flowNodeRef>start_5</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>task_6</bpmn:flowNodeRef>
       </bpmn:lane>
-      <bpmn:lane id="lane_3" name="审批人">
+      <bpmn:lane id="lane_3" name="Approvers">
         <bpmn:flowNodeRef>task_7</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>gateway_8</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>task_9</bpmn:flowNodeRef>
       </bpmn:lane>
-      <bpmn:lane id="lane_4" name="财务">
+      <bpmn:lane id="lane_4" name="Finance">
         <bpmn:flowNodeRef>gateway_11</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>task_10</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>task_12</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>end_13</bpmn:flowNodeRef>
       </bpmn:lane>
     </bpmn:laneSet>
-    <bpmn:startEvent id="start_5" name="提交报销">
+    <bpmn:startEvent id="start_5" name="Submit expense">
       <bpmn:outgoing>flow_14</bpmn:outgoing>
     </bpmn:startEvent>
-    <bpmn:userTask id="task_6" name="填写报销单">
+    <bpmn:userTask id="task_6" name="Fill expense form">
       <bpmn:incoming>flow_14</bpmn:incoming>
       <bpmn:incoming>flow_23</bpmn:incoming>
       <bpmn:outgoing>flow_15</bpmn:outgoing>
     </bpmn:userTask>
-    <bpmn:userTask id="task_7" name="经理审批">
+    <bpmn:userTask id="task_7" name="Manager approval">
       <bpmn:incoming>flow_15</bpmn:incoming>
       <bpmn:outgoing>flow_16</bpmn:outgoing>
     </bpmn:userTask>
-    <bpmn:exclusiveGateway id="gateway_8" name="金额是否超过5000元" default="flow_18">
+    <bpmn:exclusiveGateway id="gateway_8" name="Amount over 5000?" default="flow_18">
       <bpmn:incoming>flow_16</bpmn:incoming>
       <bpmn:outgoing>flow_17</bpmn:outgoing>
       <bpmn:outgoing>flow_18</bpmn:outgoing>
     </bpmn:exclusiveGateway>
-    <bpmn:userTask id="task_9" name="总经理审批">
+    <bpmn:userTask id="task_9" name="GM approval">
       <bpmn:incoming>flow_17</bpmn:incoming>
       <bpmn:outgoing>flow_19</bpmn:outgoing>
     </bpmn:userTask>
-    <bpmn:exclusiveGateway id="gateway_11" name="材料是否齐全" default="flow_22">
+    <bpmn:exclusiveGateway id="gateway_11" name="Documents complete?" default="flow_22">
       <bpmn:incoming>flow_18</bpmn:incoming>
       <bpmn:incoming>flow_19</bpmn:incoming>
       <bpmn:outgoing>flow_20</bpmn:outgoing>
       <bpmn:outgoing>flow_22</bpmn:outgoing>
     </bpmn:exclusiveGateway>
-    <bpmn:serviceTask id="task_10" name="财务打款">
+    <bpmn:serviceTask id="task_10" name="Finance payout">
       <bpmn:incoming>flow_20</bpmn:incoming>
       <bpmn:outgoing>flow_21</bpmn:outgoing>
     </bpmn:serviceTask>
-    <bpmn:sendTask id="task_12" name="通知补材料">
+    <bpmn:sendTask id="task_12" name="Notify missing documents">
       <bpmn:incoming>flow_22</bpmn:incoming>
       <bpmn:outgoing>flow_23</bpmn:outgoing>
     </bpmn:sendTask>
-    <bpmn:endEvent id="end_13" name="报销完成">
+    <bpmn:endEvent id="end_13" name="Expense completed">
       <bpmn:incoming>flow_21</bpmn:incoming>
     </bpmn:endEvent>
     <bpmn:sequenceFlow id="flow_14" sourceRef="start_5" targetRef="task_6" />
     <bpmn:sequenceFlow id="flow_15" sourceRef="task_6" targetRef="task_7" />
     <bpmn:sequenceFlow id="flow_16" sourceRef="task_7" targetRef="gateway_8" />
-    <bpmn:sequenceFlow id="flow_17" name="超过5000元" sourceRef="gateway_8" targetRef="task_9">
+    <bpmn:sequenceFlow id="flow_17" name="over 5000" sourceRef="gateway_8" targetRef="task_9">
       <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${amount &gt; 5000}</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
-    <bpmn:sequenceFlow id="flow_18" name="不超过5000元" sourceRef="gateway_8" targetRef="gateway_11" />
+    <bpmn:sequenceFlow id="flow_18" name="within 5000" sourceRef="gateway_8" targetRef="gateway_11" />
     <bpmn:sequenceFlow id="flow_19" sourceRef="task_9" targetRef="gateway_11" />
-    <bpmn:sequenceFlow id="flow_20" name="材料齐全" sourceRef="gateway_11" targetRef="task_10">
+    <bpmn:sequenceFlow id="flow_20" name="complete" sourceRef="gateway_11" targetRef="task_10">
       <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${docsComplete}</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
     <bpmn:sequenceFlow id="flow_21" sourceRef="task_10" targetRef="end_13" />
-    <bpmn:sequenceFlow id="flow_22" name="缺材料" sourceRef="gateway_11" targetRef="task_12" />
+    <bpmn:sequenceFlow id="flow_22" name="missing" sourceRef="gateway_11" targetRef="task_12" />
     <bpmn:sequenceFlow id="flow_23" sourceRef="task_12" targetRef="task_6" />
   </bpmn:process>
   <bpmndi:BPMNDiagram id="BPMNDiagram_definitions_1" name="BPMNDiagram">
@@ -88,7 +88,7 @@
       <bpmndi:BPMNShape id="start_5_di" bpmnElement="start_5">
         <dc:Bounds x="62" y="58" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="52" y="98" width="56" height="14" />
+          <dc:Bounds x="31" y="98" width="98" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="task_6_di" bpmnElement="task_6">
@@ -103,7 +103,7 @@
       <bpmndi:BPMNShape id="gateway_8_di" bpmnElement="gateway_8">
         <dc:Bounds x="538" y="166" width="50" height="50" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="500" y="148" width="126" height="14" />
+          <dc:Bounds x="503.5" y="148" width="119" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="task_9_di" bpmnElement="task_9">
@@ -115,7 +115,7 @@
       <bpmndi:BPMNShape id="gateway_11_di" bpmnElement="gateway_11">
         <dc:Bounds x="848" y="281" width="50" height="50" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="831" y="263" width="84" height="14" />
+          <dc:Bounds x="806.5" y="263" width="133" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="task_10_di" bpmnElement="task_10">
@@ -127,7 +127,7 @@
       <bpmndi:BPMNShape id="end_13_di" bpmnElement="end_13">
         <dc:Bounds x="1158" y="288" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="1148" y="328" width="56" height="14" />
+          <dc:Bounds x="1116.5" y="328" width="119" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="flow_14_di" bpmnElement="flow_14">

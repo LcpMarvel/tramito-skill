@@ -1,0 +1,13 @@
+{
+  "name": "tramito-bpmn-assistant-skill",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Runtime dependencies of the Tramito BPMN assistant skill (local validation + layout engine). The CLI lives at skill/scripts/tramito.mjs; it installs tramito-layout@latest automatically on first use and keeps following the latest release (background check ≤1/day).",
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "tramito-layout": "^2.7.2"
+  }
+}

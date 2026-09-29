@@ -2,3 +2,6 @@ dist/
 .DS_Store
 node_modules/
 *.log
+skill/.install-lock/
+skill/package-lock.json
+skill/.update-check.json

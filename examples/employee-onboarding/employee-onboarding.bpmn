@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="bpmn-elk-layout" exporterVersion="1.0.0">
   <bpmn:collaboration id="collaboration_1">
-    <bpmn:participant id="pool_1" name="公司" processRef="pool_1_process" />
+    <bpmn:participant id="pool_1" name="Company" processRef="pool_1_process" />
   </bpmn:collaboration>
-  <bpmn:process id="pool_1_process" name="公司" isExecutable="true">
+  <bpmn:process id="pool_1_process" name="Company" isExecutable="true">
     <bpmn:laneSet id="LaneSet_1">
       <bpmn:lane id="lane_2" name="HR">
         <bpmn:flowNodeRef>start_5</bpmn:flowNodeRef>
@@ -16,39 +16,39 @@
       <bpmn:lane id="lane_3" name="IT">
         <bpmn:flowNodeRef>task_8</bpmn:flowNodeRef>
       </bpmn:lane>
-      <bpmn:lane id="lane_4" name="行政">
+      <bpmn:lane id="lane_4" name="Admin">
         <bpmn:flowNodeRef>task_9</bpmn:flowNodeRef>
       </bpmn:lane>
     </bpmn:laneSet>
-    <bpmn:startEvent id="start_5" name="发出入职通知">
+    <bpmn:startEvent id="start_5" name="Send onboarding notice">
       <bpmn:outgoing>flow_13</bpmn:outgoing>
     </bpmn:startEvent>
-    <bpmn:userTask id="task_6" name="HR审核入职材料">
+    <bpmn:userTask id="task_6" name="HR reviews documents">
       <bpmn:incoming>flow_13</bpmn:incoming>
       <bpmn:outgoing>flow_14</bpmn:outgoing>
     </bpmn:userTask>
-    <bpmn:parallelGateway id="gate_7" name="并行准备">
+    <bpmn:parallelGateway id="gate_7" name="Prepare in parallel">
       <bpmn:incoming>flow_14</bpmn:incoming>
       <bpmn:outgoing>flow_15</bpmn:outgoing>
       <bpmn:outgoing>flow_16</bpmn:outgoing>
     </bpmn:parallelGateway>
-    <bpmn:parallelGateway id="gate_10" name="等待全部完成">
+    <bpmn:parallelGateway id="gate_10" name="Wait for all">
       <bpmn:incoming>flow_17</bpmn:incoming>
       <bpmn:incoming>flow_18</bpmn:incoming>
       <bpmn:outgoing>flow_19</bpmn:outgoing>
     </bpmn:parallelGateway>
-    <bpmn:sendTask id="task_11" name="通知员工报到">
+    <bpmn:sendTask id="task_11" name="Notify employee to report">
       <bpmn:incoming>flow_19</bpmn:incoming>
       <bpmn:outgoing>flow_20</bpmn:outgoing>
     </bpmn:sendTask>
-    <bpmn:endEvent id="end_12" name="入职完成">
+    <bpmn:endEvent id="end_12" name="Onboarding completed">
       <bpmn:incoming>flow_20</bpmn:incoming>
     </bpmn:endEvent>
-    <bpmn:serviceTask id="task_8" name="IT开通账号">
+    <bpmn:serviceTask id="task_8" name="IT creates account">
       <bpmn:incoming>flow_15</bpmn:incoming>
       <bpmn:outgoing>flow_17</bpmn:outgoing>
     </bpmn:serviceTask>
-    <bpmn:userTask id="task_9" name="行政配置工位">
+    <bpmn:userTask id="task_9" name="Admin prepares workstation">
       <bpmn:incoming>flow_16</bpmn:incoming>
       <bpmn:outgoing>flow_18</bpmn:outgoing>
     </bpmn:userTask>
@@ -75,7 +75,7 @@
       <bpmndi:BPMNShape id="start_5_di" bpmnElement="start_5">
         <dc:Bounds x="62" y="61" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="38" y="101" width="84" height="14" />
+          <dc:Bounds x="3" y="101" width="154" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="task_6_di" bpmnElement="task_6">
@@ -84,7 +84,7 @@
       <bpmndi:BPMNShape id="gate_7_di" bpmnElement="gate_7">
         <dc:Bounds x="358" y="54" width="50" height="50" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="355" y="36" width="56" height="14" />
+          <dc:Bounds x="316.5" y="36" width="133" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="gate_10_di" bpmnElement="gate_10">
@@ -99,7 +99,7 @@
       <bpmndi:BPMNShape id="end_12_di" bpmnElement="end_12">
         <dc:Bounds x="978" y="200" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="968" y="240" width="56" height="14" />
+          <dc:Bounds x="926" y="240" width="140" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="lane_3_di" bpmnElement="lane_3" isHorizontal="true">
